@@ -1,0 +1,30 @@
+{
+  "name": "arc-kalshi-oracle",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "verify": "npx hardhat verify",
+    "set": "npx hardhat run scripts/set.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://andysign@github.com/viczommers/arc-kalshi-oracle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/viczommers/arc-kalshi-oracle/issues"
+  },
+  "homepage": "https://github.com/viczommers/arc-kalshi-oracle#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^16.6.1",
+    "hardhat": "^2.27.0"
+  }
+}
