@@ -1,8 +1,9 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from web3 import Web3
 from eth_account import Account
@@ -136,8 +137,15 @@ class OracleResponse(BaseModel):
     data: Optional[dict] = None
 
 
-@app.get("/")
-async def root():
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Serve the main web interface"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
     return {
         "service": "KalshiLink Oracle Server",
         "version": "1.0.0",
