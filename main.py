@@ -10,10 +10,10 @@ from datetime import datetime
 from typing import Optional
 templates = Jinja2Templates(directory="templates")
 
-# import os
-# # Load environment variables from .env file
-# from dotenv import load_dotenv
-# load_dotenv()
+import os
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI(title="KalshiLink Oracle Server")
 app.mount("/static", StaticFiles(directory="static"), name="static")
