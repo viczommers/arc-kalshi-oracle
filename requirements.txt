@@ -1,0 +1,16 @@
+# Core dependencies
+fastapi
+uvicorn[standard]
+gunicorn
+jinja2
+pydantic
+
+# Web3 dependencies
+web3
+eth-account
+
+# Configuration
+python-dotenv
+
+# Required for Python 3.13
+setuptools
