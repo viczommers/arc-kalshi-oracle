@@ -28,8 +28,11 @@ app.add_middleware(
 )
 
 # Configuration
-RPC_URL = os.getenv("RPC_URL", "https://rpc.testnet.arc.network")
-CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0xc1256868D57378ef0309928Dedce736815A8bC41")
+RPC_URL = "https://rpc.testnet.arc.network"
+# Token addresses on ARC Testnet (update these with actual addresses)
+USDC_ADDRESS = "0x3600000000000000000000000000000000000000"  # Update with actual USDC address
+EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a"  # Update with actual EURC address
+CONTRACT_ADDRESS = "0xc1256868D57378ef0309928Dedce736815A8bC41"
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")  # Set via environment variable
 
 # Initialize Web3
@@ -91,6 +94,31 @@ CONTRACT_ABI = [
     }
 ]
 
+# ERC20 Token ABI for balance checking
+ERC20_ABI = [
+    {
+        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
 # Initialize contract
 contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
@@ -133,6 +161,69 @@ async def health_check():
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
+
+
+@app.get("/balance")
+async def get_token_balances(address: Optional[str] = None):
+    """Get USDC and EURC token balances for an address on ARC Testnet"""
+    # Default to the specified address if none provided
+    target_address = address or "0x420694f95287e8552cdc2e7d68e81a294f23035e"
+
+    try:
+        # Convert to checksum address
+        checksum_address = Web3.to_checksum_address(target_address)
+
+        balances = {}
+
+        # Get USDC balance
+        if USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
+            try:
+                usdc_contract = w3.eth.contract(
+                    address=Web3.to_checksum_address(USDC_ADDRESS),
+                    abi=ERC20_ABI
+                )
+                usdc_balance = usdc_contract.functions.balanceOf(checksum_address).call()
+                usdc_decimals = usdc_contract.functions.decimals().call()
+                usdc_symbol = usdc_contract.functions.symbol().call()
+
+                balances["USDC"] = {
+                    "symbol": usdc_symbol,
+                    "balance_raw": str(usdc_balance),
+                    "balance": str(usdc_balance / (10 ** usdc_decimals)),
+                    "decimals": usdc_decimals,
+                    "contract_address": USDC_ADDRESS
+                }
+            except Exception as e:
+                balances["USDC"] = {"error": str(e)}
+
+        # Get EURC balance
+        if EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
+            try:
+                eurc_contract = w3.eth.contract(
+                    address=Web3.to_checksum_address(EURC_ADDRESS),
+                    abi=ERC20_ABI
+                )
+                eurc_balance = eurc_contract.functions.balanceOf(checksum_address).call()
+                eurc_decimals = eurc_contract.functions.decimals().call()
+                eurc_symbol = eurc_contract.functions.symbol().call()
+
+                balances["EURC"] = {
+                    "symbol": eurc_symbol,
+                    "balance_raw": str(eurc_balance),
+                    "balance": str(eurc_balance / (10 ** eurc_decimals)),
+                    "decimals": eurc_decimals,
+                    "contract_address": EURC_ADDRESS
+                }
+            except Exception as e:
+                balances["EURC"] = {"error": str(e)}
+
+        return {
+            "address": checksum_address,
+            "chain": "Arc Testnet",
+            "balances": balances
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch balances: {str(e)}")
 
 
 @app.get("/oracle/info")
