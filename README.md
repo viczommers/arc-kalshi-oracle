@@ -1,5 +1,9 @@
 # Kalshi Oracle and Treasury Auto Balancer
 
+**Live demo:**
+
+Check out the live demo [here](https://trade.delphi-pool.com/).
+
 
 *"Predictive Treasury Automation"*
 
