@@ -84,6 +84,7 @@ console.log('MetaMask detected:', typeof window.ethereum !== 'undefined');
 // DOM Elements
 const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
+const addPstTokenBtn = document.getElementById('addPstTokenBtn');
 const walletInfo = document.getElementById('walletInfo');
 const walletAddress = document.getElementById('walletAddress');
 const networkName = document.getElementById('networkName');
@@ -119,6 +120,7 @@ connectBtn.addEventListener('click', () => {
     connectWallet();
 });
 disconnectBtn.addEventListener('click', disconnectWallet);
+addPstTokenBtn.addEventListener('click', addPstTokenToMetaMask);
 refreshBalances.addEventListener('click', loadBalances);
 getTokensBtn.addEventListener('click', mintTestTokens);
 approveAndDepositBtn.addEventListener('click', approveAndDeposit);
@@ -270,6 +272,36 @@ function disconnectWallet() {
     eurcBalance.textContent = '--';
     usdToEurProp.textContent = '--';
     eurToUsdProp.textContent = '--';
+}
+
+async function addPstTokenToMetaMask() {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('Please install MetaMask to add tokens!');
+            return;
+        }
+
+        const wasAdded = await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20',
+                options: {
+                    address: PST_TOKEN_ADDRESS,
+                    symbol: 'PST',
+                    decimals: 18,
+                    image: '',
+                },
+            },
+        });
+
+        if (wasAdded) {
+            showResult('PST token added to MetaMask successfully!', 'success');
+            setTimeout(() => result.classList.add('hidden'), 3000);
+        }
+    } catch (error) {
+        console.error('Failed to add PST token:', error);
+        showResult(`Failed to add token: ${error.message}`, 'error');
+    }
 }
 
 async function loadBalances() {
