@@ -19,7 +19,7 @@ const ARC_TESTNET = {
 const MOCK_USDC_ADDRESS = '0xB0F5067211bBCBc4E8302E5b52939086d4397bBe';
 const MOCK_EURC_ADDRESS = '0xd927Fe415c5e74F103A104A9313DDbae26125D1F';
 const ORACLE_CONTRACT_ADDRESS = '0xc1256868D57378ef0309928Dedce736815A8bC41';
-const TREASURY_CONTRACT_ADDRESS = '0x241b2Ad926b3E47E5d1C27A4a031B5D00Bc09228';
+const TREASURY_CONTRACT_ADDRESS = '0xB241a0d436446AAd90Be026306F2cdaE26FB712f';
 
 // ERC20 ABI for approve and balanceOf functions
 const ERC20_ABI = [
@@ -42,6 +42,17 @@ const ERC20_ABI = [
     }
 ];
 
+// Treasury Management contract ABI
+const TREASURY_ABI = [
+    {
+        "inputs": [],
+        "name": "depositDualAll",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
+
 // Check if ethers is loaded
 console.log('Ethers loaded:', typeof ethers !== 'undefined');
 console.log('MetaMask detected:', typeof window.ethereum !== 'undefined');
@@ -57,6 +68,7 @@ const eurcBalance = document.getElementById('eurcBalance');
 const refreshBalances = document.getElementById('refreshBalances');
 const getTokensBtn = document.getElementById('getTokensBtn');
 const approveTokensBtn = document.getElementById('approveTokensBtn');
+const depositAllBtn = document.getElementById('depositAllBtn');
 const oracleForm = document.getElementById('oracleForm');
 const submitBtn = document.getElementById('submitBtn');
 const result = document.getElementById('result');
@@ -76,6 +88,7 @@ disconnectBtn.addEventListener('click', disconnectWallet);
 refreshBalances.addEventListener('click', loadBalances);
 getTokensBtn.addEventListener('click', mintTestTokens);
 approveTokensBtn.addEventListener('click', approveTokens);
+depositAllBtn.addEventListener('click', depositAllTokens);
 oracleForm.addEventListener('submit', submitOracleData);
 
 // Initialize
@@ -156,6 +169,7 @@ async function connectWallet() {
         refreshBalances.disabled = false;
         getTokensBtn.disabled = false;
         approveTokensBtn.disabled = false;
+        depositAllBtn.disabled = false;
         submitBtn.disabled = false;
 
         // Load balances
@@ -179,6 +193,7 @@ function disconnectWallet() {
     refreshBalances.disabled = true;
     getTokensBtn.disabled = true;
     approveTokensBtn.disabled = true;
+    depositAllBtn.disabled = true;
     submitBtn.disabled = true;
 
     usdcBalance.textContent = '--';
@@ -317,6 +332,43 @@ async function approveTokens() {
     } finally {
         approveTokensBtn.disabled = false;
         approveTokensBtn.textContent = 'Approve Tokens';
+    }
+}
+
+async function depositAllTokens() {
+    if (!signer) {
+        showResult('Please connect your wallet first', 'error');
+        return;
+    }
+
+    depositAllBtn.disabled = true;
+    depositAllBtn.textContent = 'Depositing...';
+
+    try {
+        // Create Treasury contract instance
+        const treasuryContract = new ethers.Contract(TREASURY_CONTRACT_ADDRESS, TREASURY_ABI, signer);
+
+        // Call depositDualAll
+        const tx = await treasuryContract.depositDualAll();
+
+        showResult('Transaction submitted! Waiting for confirmation...', 'success');
+
+        // Wait for transaction to be mined
+        const receipt = await tx.wait();
+
+        showResult(
+            `All tokens deposited successfully!<br>Transaction: ${receipt.transactionHash.substring(0, 10)}...<br>Block: ${receipt.blockNumber}`,
+            'success'
+        );
+
+        // Refresh balances after deposit
+        setTimeout(() => loadBalances(), 2000);
+    } catch (error) {
+        console.error('Failed to deposit tokens:', error);
+        showResult(`Failed to deposit tokens: ${error.message}`, 'error');
+    } finally {
+        depositAllBtn.disabled = false;
+        depositAllBtn.textContent = 'Deposit All Tokens';
     }
 }
 

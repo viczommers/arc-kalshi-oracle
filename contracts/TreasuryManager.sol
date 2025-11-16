@@ -57,8 +57,10 @@ contract TreasuryManager /*is Ownable*/ {
         } else {
             uint256 tvlCur = usdcToken.balanceOf(address(this)) + eurcToken.balanceOf(address(this));
             uint256 tvlNew = tvlCur + amountUsdc + amountEurc;
-            uint256 newRatio = (tvlCur * 1 ether) / tvlNew;
-            uint256 amountPst = pstToken.totalSupply() * (1_000000000_000000000 - newRatio);
+            // uint256 newRatio = (tvlCur * 1 ether) / tvlNew;
+            uint256 newRatio = (tvlNew * 1 ether) / tvlCur;
+            // uint256 amountPst = pstToken.totalSupply() * (1_000000000_000000000 - newRatio);
+            uint256 amountPst = (pstToken.totalSupply() * (newRatio - 1_000000000_000000000)) / 1_000000000_000000000;
             emit Log(pstToken.totalSupply());
             emit Log(1_000000000_000000000);
             emit Log(newRatio);
