@@ -16,6 +16,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# Import Kalshi client
+from kalshi_client import get_todays_maket
+
 app = FastAPI(title="KalshiLink Oracle Server")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -232,6 +235,26 @@ async def get_token_balances(address: Optional[str] = None):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch balances: {str(e)}")
+
+
+@app.get("/kalshi/market")
+async def get_kalshi_market():
+    """Test endpoint to get today's Kalshi market"""
+    try:
+        market = get_todays_maket()
+
+        if market:
+            return {
+                "success": True,
+                "market": market
+            }
+        else:
+            return {
+                "success": False,
+                "message": "No market found"
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch Kalshi market: {str(e)}")
 
 
 @app.get("/oracle/info")

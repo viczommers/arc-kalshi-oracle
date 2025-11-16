@@ -12,5 +12,8 @@ eth-account
 # Configuration
 python-dotenv
 
+# HTTP Client
+requests
+
 # Required for Python 3.13
 setuptools
