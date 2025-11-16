@@ -42,22 +42,19 @@ After that if the Admin wants to `10.` rebalance the portfolio to have, let's sa
 
 ```mermaid
 graph TD
-    A[0. Set users, provider & others] --> B[1. Deploy mocked USD]
-    B --> C[2. Deploy mocked €]
-    C --> D[3. Deploy PST]
-    D --> E[4. Deploy TreasuryManager]
-    E --> F[5. Mint 1 USD]
-    F --> G[6. Mint 1 €]
-    G --> H[7. Approve spend of USD]
-    H --> I[8. Approve spend of €]
-    I --> J[9. DepositDualAll]
-    J --> K{Rebalance portfolio?}
-    K -->|Admin/Oracle calls reBalance| L[10. Rebalance portfolio]
-    L --> M{Withdraw?}
-    K -->|No| M
-    M -->|Pool participant calls withdrawAndBurn| N[11. Withdraw and burn PST]
-    M -->|No| O[End]
-    N --> O
+    A[0. Set users, provider & others] --> B[1. Deploy mocked USD and €]
+    B --> C[2. Deploy PST]
+    C --> D[3. Deploy TreasuryManager]
+    D --> E[4. Mint 1 USD and 1 €]
+    E --> F[5. Approve spend of USD and €]
+    F --> G[6. DepositDualAll]
+    G --> H{Rebalance portfolio?}
+    H -->|Admin/Oracle calls reBalance| I[7. Rebalance portfolio]
+    I --> J{Withdraw?}
+    H -->|No| J
+    J -->|Pool participant calls withdrawAndBurn| K[8. Withdraw and burn PST]
+    J -->|No| L[End]
+    K --> L
 ```
 
 For more details on how the first main contract (treasury) and second smart contract (oracle) works, see below.
