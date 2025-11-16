@@ -3,25 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KalshiLink Oracle - ARC Testnet</title>
+    <title>Delphi Pool | Kalshi x Circle</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🔮 KalshiLink Oracle</h1>
-            <p class="subtitle">EUR/USD Prediction Market Oracle on ARC Testnet</p>
-        </header>
+    <div class="fluid-container">
+        <div class="fluid-wave" id="asciiCanvas"></div>
+    </div>
 
-        <div class="wallet-section">
-            <button id="connectBtn" class="btn btn-primary">Connect MetaMask</button>
+    <div class="wallet-header">
+        <div class="wallet-header-container">
+            <button id="connectBtn" class="btn btn-primary">Connect MetaMask 🦊</button>
             <div id="walletInfo" class="wallet-info hidden">
-                <p><strong>Connected:</strong> <span id="walletAddress"></span></p>
-                <p><strong>Network:</strong> <span id="networkName"></span></p>
+                <span><strong>Connected:</strong> <span id="walletAddress"></span></span>
+                <span><strong>Network:</strong> <span id="networkName"></span></span>
                 <button id="disconnectBtn" class="btn btn-secondary">Disconnect</button>
             </div>
         </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>
+                <span id="word1" class="scrambled">K9#XM@4L7P2Q5R</span>
+                <span> </span>
+                <span id="word2" class="scrambled">N&8R*5S1</span>
+            </h1>
+            <p class="subtitle">Kalshi Odds as Prediction Markets Oracle for USDC/EURC Treasury Management</p>
+        </header>
 
         <div class="balance-section">
             <h2>Token Balances</h2>
@@ -48,13 +58,13 @@
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                 <button id="refreshBalances" class="btn btn-secondary" disabled>Refresh Balances</button>
-                <button id="getTokensBtn" class="btn btn-primary" disabled>Get Test Tokens</button>
+                <button id="getTokensBtn" class="btn btn-primary" disabled style="display: none;">Get Test Tokens</button>
                 <button id="approveAndDepositBtn" class="btn btn-primary" disabled>Approve & Deposit All</button>
                 <button id="approveAndWithdrawBtn" class="btn btn-primary" disabled>Approve & Withdraw PST</button>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <button id="approveTokensBtn" class="btn btn-secondary" disabled>Approve Only</button>
-                <button id="depositAllBtn" class="btn btn-secondary" disabled>Deposit Only</button>
+                <button id="approveTokensBtn" class="btn btn-secondary" disabled style="display: none;">Approve Only</button>
+                <button id="depositAllBtn" class="btn btn-secondary" disabled style="display: none;">Deposit Only</button>
             </div>
         </div>
 
@@ -90,6 +100,24 @@
             </form>
 
             <div id="result" class="result hidden"></div>
+        </div>
+
+        <div class="oracle-info">
+            <h2>Kalshi Market Data</h2>
+            <div id="kalshiData" class="info-grid">
+                <div class="info-item">
+                    <span class="label">EUR/USD Rate:</span>
+                    <span id="eurUsdRate">Loading...</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Probability:</span>
+                    <span id="kalshiProbability">Loading...</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Ticker:</span>
+                    <span id="kalshiTicker">Loading...</span>
+                </div>
+            </div>
         </div>
 
         <div class="oracle-info">

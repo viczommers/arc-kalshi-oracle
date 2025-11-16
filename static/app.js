@@ -3,6 +3,7 @@ let provider;
 let signer;
 let userAddress;
 let proportionsInterval = null;
+let kalshiInterval = null;
 
 const ARC_TESTNET = {
     chainId: '0x4CEF52', // 314098 in decimal (Arc Testnet)
@@ -105,6 +106,11 @@ const contractAddress = document.getElementById('contractAddress');
 const ownerAddress = document.getElementById('ownerAddress');
 const totalDataPoints = document.getElementById('totalDataPoints');
 
+// Kalshi Market Data
+const eurUsdRate = document.getElementById('eurUsdRate');
+const kalshiProbability = document.getElementById('kalshiProbability');
+const kalshiTicker = document.getElementById('kalshiTicker');
+
 // Event Listeners
 console.log('Setting up event listeners...');
 connectBtn.addEventListener('click', () => {
@@ -124,6 +130,12 @@ oracleForm.addEventListener('submit', submitOracleData);
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing...');
     loadOracleInfo();
+    loadKalshiMarketData();
+
+    // Start auto-refresh for Kalshi data every 30 seconds
+    kalshiInterval = setInterval(() => {
+        loadKalshiMarketData();
+    }, 30000);
 
     // Check if already connected
     if (window.ethereum && window.ethereum.selectedAddress) {
@@ -616,6 +628,40 @@ async function loadOracleInfo() {
     }
 }
 
+async function loadKalshiMarketData() {
+    try {
+        const response = await fetch('/kalshi/market');
+        const data = await response.json();
+
+        if (data.success && data.market) {
+            const market = data.market;
+
+            // Display EUR/USD rate
+            eurUsdRate.textContent = market.price || 'N/A';
+
+            // Display probability as percentage
+            const prob = market.probability;
+            if (prob !== null && prob !== undefined) {
+                kalshiProbability.textContent = `${(prob * 100).toFixed(2)}%`;
+            } else {
+                kalshiProbability.textContent = 'N/A';
+            }
+
+            // Display ticker
+            kalshiTicker.textContent = market.ticker || 'N/A';
+        } else {
+            eurUsdRate.textContent = 'No data';
+            kalshiProbability.textContent = 'No data';
+            kalshiTicker.textContent = 'No data';
+        }
+    } catch (error) {
+        console.error('Failed to load Kalshi market data:', error);
+        eurUsdRate.textContent = 'Error';
+        kalshiProbability.textContent = 'Error';
+        kalshiTicker.textContent = 'Error';
+    }
+}
+
 async function submitOracleData(e) {
     e.preventDefault();
 
@@ -670,4 +716,140 @@ function showResult(message, type) {
     result.innerHTML = message;
     result.className = `result ${type}`;
     result.classList.remove('hidden');
+}
+
+// ASCII Wave Pattern Animation
+class FluidAnimation {
+    constructor() {
+        this.chars = [
+            ' ', ' ', '.', '·', '░', '░', '░', '░', '▒', '▒', '▒', '▒', '▓', '▓', '▓', '█', '▀', '▄', '▌', '▐', '■', '□', '□', '□', '□', '▪', '▫', '▫', '▫', '▫', '▬'
+        ];
+        this.canvas = document.getElementById('asciiCanvas');
+        this.width = 0;
+        this.height = 0;
+        this.time = 0;
+        this.init();
+    }
+
+    init() {
+        this.updateDimensions();
+        this.animate();
+        window.addEventListener('resize', () => this.updateDimensions());
+    }
+
+    updateDimensions() {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        const testElement = document.createElement('div');
+        testElement.style.position = 'absolute';
+        testElement.style.top = '-1000px';
+        testElement.style.left = '-1000px';
+        testElement.style.fontFamily = 'Courier New, monospace';
+        testElement.style.fontSize = '12px';
+        testElement.style.lineHeight = '1';
+        testElement.style.letterSpacing = '0';
+        testElement.style.whiteSpace = 'pre';
+        testElement.textContent = 'M';
+
+        document.body.appendChild(testElement);
+        const rect = testElement.getBoundingClientRect();
+        const actualCharWidth = rect.width;
+        const actualCharHeight = rect.height;
+        document.body.removeChild(testElement);
+
+        this.width = Math.ceil(viewportWidth / actualCharWidth);
+        this.height = Math.ceil(viewportHeight / actualCharHeight);
+    }
+
+    renderWaves() {
+        let result = '';
+
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                // Multiple wave layers
+                const wave1 = Math.sin(x * 0.15 + this.time * 0.08);
+                const wave2 = Math.sin(y * 0.1 + this.time * 0.05);
+                const wave3 = Math.cos(x * 0.08 - y * 0.08 + this.time * 0.06);
+                const wave4 = Math.sin((x + y) * 0.05 + this.time * 0.04);
+
+                // Radial wave from center
+                const centerX = this.width / 2;
+                const centerY = this.height / 2;
+                const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                const radialWave = Math.sin(dist * 0.3 - this.time * 0.1);
+
+                // Diagonal flowing wave
+                const diagonalWave = Math.sin((x - y) * 0.12 + this.time * 0.07);
+
+                // Combine all waves
+                const combined = (wave1 + wave2 + wave3 + wave4 + radialWave + diagonalWave) / 6;
+
+                // Convert to 0-1 range
+                const value = (combined + 1) / 2;
+
+                // Apply some noise/variation
+                const noise = Math.sin(x * 2.5 + y * 3.7 + this.time * 0.02) * 0.05;
+                const finalValue = Math.max(0, Math.min(1, value + noise));
+
+                // Map to character
+                const charIndex = Math.floor(finalValue * (this.chars.length - 1));
+                result += this.chars[charIndex];
+            }
+            result += '\n';
+        }
+
+        this.canvas.textContent = result;
+    }
+
+    animate() {
+        this.time += 1;
+
+        const frameRate = 25;
+        const frameDelay = 1000 / frameRate;
+
+        setTimeout(() => {
+            this.renderWaves();
+            requestAnimationFrame(() => this.animate());
+        }, frameDelay);
+    }
+}
+
+// Text scrambling animation
+function scrambleText(element, finalText, duration = 2000) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+    let iteration = 0;
+
+    const totalSteps = finalText.length * 4;
+    const intervalTime = duration / totalSteps;
+
+    const interval = setInterval(() => {
+        element.textContent = finalText
+            .split('')
+            .map((char, index) => {
+                if (index < iteration) {
+                    return finalText[index];
+                }
+                return chars[Math.floor(Math.random() * chars.length)];
+            })
+            .join('');
+
+        if (iteration >= finalText.length) {
+            clearInterval(interval);
+            element.classList.add('revealed');
+        }
+
+        iteration += 1 / 4;
+    }, intervalTime);
+}
+
+// Initialize ASCII wave animation on load
+if (document.getElementById('asciiCanvas')) {
+    new FluidAnimation();
+}
+
+// Initialize text scramble animation
+if (document.getElementById('word1') && document.getElementById('word2')) {
+    scrambleText(document.getElementById('word1'), 'DELPHI', 2000);
+    scrambleText(document.getElementById('word2'), 'POOL', 2000);
 }

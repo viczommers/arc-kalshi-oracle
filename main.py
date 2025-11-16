@@ -25,7 +25,7 @@ load_dotenv()
 # Import Kalshi client
 from kalshi_client import get_latest_maket
 
-app = FastAPI(title="KalshiLink Oracle Server")
+app = FastAPI(title="Kalshi Oracle x Circle")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # CORS configuration
