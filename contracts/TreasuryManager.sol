@@ -55,7 +55,7 @@ contract TreasuryManager /*is Ownable*/ {
         if (pstToken.totalSupply() == 0) {
             pstToken.mint(sender, 1 ether);
         } else {
-            uint256 tvlCur = usdcToken.balanceOf(address(this)) + eurcToken.balanceOf(address(this));
+            uint256 tvlCur = usdcToken.balanceOf(address(this)) + (eurcToken.balanceOf(address(this)) * 10**12);
             uint256 tvlNew = tvlCur + amountUsdc + amountEurc;
             uint256 newRatio = (tvlCur * 1 ether) / tvlNew;
             uint256 amountPst = pstToken.totalSupply() * (1_000000000_000000000 - newRatio);
@@ -67,7 +67,7 @@ contract TreasuryManager /*is Ownable*/ {
             emit NewRatioCalculated(newRatio);
         }
 
-        require(usdcToken.transferFrom(sender, address(this), amountUsdc) && eurcToken.transferFrom(sender, address(this), amountEurc), "USDC/EURC transfer failed");
+        require(usdcToken.transferFrom(sender, address(this), amountUsdc) && eurcToken.transferFrom(sender, address(this), amountEurc / 10**12), "USDC/EURC transfer failed");
 
         emit Deposit(msg.sender, amountUsdc, amountEurc);
     }
@@ -89,12 +89,12 @@ contract TreasuryManager /*is Ownable*/ {
     }
 
     function reBalance(uint256 _targetUsdPerc /*25*/ /*, uint256 targetEurPerc 75*/) external {
-        uint256 totalValue = usdcToken.balanceOf(address(this)) + eurcToken.balanceOf(address(this));
+        uint256 totalValue = usdcToken.balanceOf(address(this)) + (eurcToken.balanceOf(address(this)) * 10**12);
 
         uint256 targetUsd = (_targetUsdPerc         * totalValue * 1 ether) / (100 * 1 ether);
         uint256 targetEur = ((100 - _targetUsdPerc) * totalValue * 1 ether) / (100 * 1 ether);
 
-        uint256 amountEur = eurcToken.balanceOf(address(this)) > targetEur ? 0 : targetEur - eurcToken.balanceOf(address(this));
+        uint256 amountEur = eurcToken.balanceOf(address(this)) > targetEur / 10**12 ? 0 : (targetEur / 10**12) - eurcToken.balanceOf(address(this));
         eurcToken.mint(address(this), amountEur); // mint
 
         uint256 amountUsd = usdcToken.balanceOf(address(this)) > targetUsd ? usdcToken.balanceOf(address(this)) - targetUsd : 0;
