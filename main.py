@@ -9,7 +9,13 @@ from web3 import Web3
 from eth_account import Account
 from datetime import datetime
 from typing import Optional
+import asyncio
+import logging
 templates = Jinja2Templates(directory="templates")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 import os
 # Load environment variables from .env file
@@ -17,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import Kalshi client
-from kalshi_client import get_todays_maket
+from kalshi_client import get_latest_maket
 
 app = FastAPI(title="KalshiLink Oracle Server")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -31,6 +37,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+async def run_scheduler():
+    """Background task that runs the oracle update every 5 minutes"""
+    while True:
+        try:
+            await scheduled_oracle_update()
+        except Exception as e:
+            logger.error(f"Error in scheduler loop: {str(e)}")
+
+        # Wait 5 minutes before next run
+        await asyncio.sleep(300)  # 300 seconds = 5 minutes
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the background scheduler when the app starts"""
+    logger.info("Starting background scheduler...")
+    asyncio.create_task(run_scheduler())
+    logger.info("Scheduler started. Oracle updates will run every 5 minutes.")
+
 # Configuration
 RPC_URL = "https://rpc.testnet.arc.network"
 # Token addresses on ARC Testnet
@@ -40,6 +66,7 @@ EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a"  # Update with actua
 MOCK_USDC_ADDRESS = "0xB0F5067211bBCBc4E8302E5b52939086d4397bBe"  # Update with deployed Mock USDC address
 MOCK_EURC_ADDRESS = "0xd927Fe415c5e74F103A104A9313DDbae26125D1F"  # Update with deployed Mock EURC address
 CONTRACT_ADDRESS = "0xc1256868D57378ef0309928Dedce736815A8bC41"
+TREASURY_CONTRACT_ADDRESS = "0xB241a0d436446AAd90Be026306F2cdaE26FB712f"
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")  # Set via environment variable
 
 # Initialize Web3
@@ -136,8 +163,175 @@ ERC20_ABI = [
     }
 ]
 
-# Initialize contract
+# Treasury Management contract ABI
+TREASURY_ABI = [
+    {
+        "inputs": [{"internalType": "uint256", "name": "_targetUsdPerc", "type": "uint256"}],
+        "name": "reBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "usdToEurProportion",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "eurToUsdProportion",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
+# Initialize contracts
 contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
+treasury_contract = w3.eth.contract(address=Web3.to_checksum_address(TREASURY_CONTRACT_ADDRESS), abi=TREASURY_ABI)
+
+
+# Scheduled task to fetch Kalshi data, submit to oracle, and rebalance treasury
+async def scheduled_oracle_update():
+    """
+    Scheduled task that runs every 5 minutes to:
+    1. Fetch latest Kalshi market data
+    2. Submit to oracle contract
+    3. Rebalance treasury based on market data
+    """
+    try:
+        logger.info("Starting scheduled oracle update...")
+
+        if not PRIVATE_KEY:
+            logger.error("Private key not configured, skipping scheduled update")
+            return
+
+        # Get account from private key
+        account = Account.from_key(PRIVATE_KEY)
+
+        # Step 1: Fetch Kalshi market data
+        try:
+            market_data = get_latest_maket()
+            if not market_data:
+                logger.warning("No Kalshi market data found, skipping update")
+                return
+
+            price = market_data.get('price')
+            probability = market_data.get('probability')
+            ticker = market_data.get('ticker')
+
+            logger.info(f"Fetched Kalshi market - Ticker: {ticker}, Price: {price}, Probability: {probability:.2%}")
+
+            # Convert price string to float (e.g., '1.163' -> 1.163)
+            # This represents the EUR/USD exchange rate
+            price_float = float(price)
+
+            # Convert to oracle format (rate * 1000)
+            # For EUR/USD rate of 1.163, this would be 1163
+            oracle_value = int(price_float * 1000)
+
+            # Ensure value is in valid range
+            oracle_value = max(1, min(99999, oracle_value))
+
+        except Exception as e:
+            logger.error(f"Failed to fetch Kalshi data: {str(e)}")
+            return
+
+        # Step 2: Submit data to oracle
+        try:
+            current_time = int(datetime.now().timestamp())
+            resolution_time = current_time + (24 * 60 * 60)  # 24 hours from now
+
+            nonce = w3.eth.get_transaction_count(account.address)
+
+            # Estimate gas
+            gas_estimate = contract.functions.fulfillPredictionMarketDataEurUsd(
+                oracle_value,
+                current_time,
+                resolution_time
+            ).estimate_gas({'from': account.address})
+
+            # Build transaction
+            transaction = contract.functions.fulfillPredictionMarketDataEurUsd(
+                oracle_value,
+                current_time,
+                resolution_time
+            ).build_transaction({
+                'from': account.address,
+                'nonce': nonce,
+                'gas': gas_estimate + 10000,
+                'gasPrice': w3.eth.gas_price,
+            })
+
+            # Sign and send transaction
+            signed_txn = account.sign_transaction(transaction)
+            tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+            logger.info(f"Oracle data submitted successfully. TX: {tx_hash.hex()}, Value: {oracle_value / 1000}%")
+
+        except Exception as e:
+            logger.error(f"Failed to submit oracle data: {str(e)}")
+            return
+
+        # Step 3: Rebalance treasury based on market data
+        try:
+            # Calculate target USD percentage based on EUR/USD exchange rate
+            # EUR/USD typical range: 1.05 - 1.20
+            # If EUR/USD is high (e.g., 1.20), EUR is strong → hold more EUR (less USD)
+            # If EUR/USD is low (e.g., 1.05), EUR is weak → hold more USD
+
+            # Map EUR/USD rate (1.05 - 1.20) to USD percentage (25% - 75%)
+            # Higher EUR/USD → Lower USD percentage
+            min_rate = 1.05
+            max_rate = 1.20
+
+            # Clamp the rate to expected range
+            clamped_rate = max(min_rate, min(max_rate, price_float))
+
+            # Invert: higher EUR/USD rate means lower USD percentage
+            # Linear mapping: 1.05 → 75% USD, 1.20 → 25% USD
+            target_usd_perc = int(75 - ((clamped_rate - min_rate) / (max_rate - min_rate)) * 50)
+
+            # Ensure target is in valid range (25-75%)
+            target_usd_perc = max(25, min(75, target_usd_perc))
+
+            logger.info(f"Calculated rebalancing - EUR/USD: {price_float}, Target USD%: {target_usd_perc}%")
+
+            nonce = w3.eth.get_transaction_count(account.address)
+
+            # Estimate gas
+            gas_estimate = treasury_contract.functions.reBalance(
+                target_usd_perc
+            ).estimate_gas({'from': account.address})
+
+            # Build transaction
+            transaction = treasury_contract.functions.reBalance(
+                target_usd_perc
+            ).build_transaction({
+                'from': account.address,
+                'nonce': nonce,
+                'gas': gas_estimate + 10000,
+                'gasPrice': w3.eth.gas_price,
+            })
+
+            # Sign and send transaction
+            signed_txn = account.sign_transaction(transaction)
+            tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+            logger.info(f"Treasury rebalanced successfully. TX: {tx_hash.hex()}, Target USD: {target_usd_perc}%")
+
+        except Exception as e:
+            logger.error(f"Failed to rebalance treasury: {str(e)}")
+            return
+
+        logger.info("Scheduled oracle update completed successfully")
+
+    except Exception as e:
+        logger.error(f"Error in scheduled oracle update: {str(e)}")
 
 
 class OracleData(BaseModel):
@@ -395,7 +589,7 @@ async def mint_test_tokens(address: str):
 async def get_kalshi_market():
     """Test endpoint to get today's Kalshi market"""
     try:
-        market = get_todays_maket()
+        market = get_latest_maket()
 
         if market:
             return {

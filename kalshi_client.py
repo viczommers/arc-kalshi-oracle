@@ -1,31 +1,92 @@
 import requests
 from datetime import datetime, timedelta, timezone
 
-def get_todays_maket():
-    tomorrow_utc = datetime.now(timezone.utc) + timedelta(hours=24)
-    tomorrow_timestamp = int(tomorrow_utc.timestamp())
+
+def implied_probability(market):
+    """
+    Calculate implied probability from market yes_bid and no_ask.
+
+    Args:
+        market: Market dict with yes_bid and no_ask fields
+
+    Returns:
+        float: Implied probability (0.0 to 1.0)
+    """
+    yes_bid = market.get("yes_bid")
+    no_ask = market.get("no_ask")
+
+    if yes_bid and yes_bid > 0:
+        return yes_bid / 100.0
+
+    if no_ask and no_ask > 0:
+        return 1 - (no_ask / 100.0)
+
+    return 0.5
+
+
+def get_latest_maket():
+    """
+    Fetch today's EUR/USD market from Kalshi and return the most likely outcome.
+
+    Returns:
+        dict: {
+            'price': str (e.g., '095'),
+            'probability': float (0.0 to 1.0),
+            'ticker': str,
+            'yes_bid': int,
+            'no_ask': int,
+            'event': dict (full event data)
+        }
+        or None if no data available
+    """
     try:
-        url = "https://api.elections.kalshi.com/trade-api/v2/markets"
-        url = "https://demo-api.kalshi.co/trade-api/v2/markets"
+        url = "https://demo-api.kalshi.co/trade-api/v2/events"
         querystring = {
-            "series_ticker":"KXEURUSD",
+            "series_ticker": "KXEURUSD",
             "status": "open",
-            }
+            "with_nested_markets": True,
+        }
         response = requests.get(url, params=querystring)
         response.raise_for_status()
         result = response.json()
-        markets = result.get('markets',[])
-        if markets:
-            # Sort by expected_expiration_time (earliest first)
-            sorted_markets = sorted(
-                markets,
-                key=lambda x: x.get('expected_expiration_time', '9999-12-31T23:59:59Z')
-            )
-            return sorted_markets[0]
-            
-    except Exception as e:
-        print("Error ", e)
-        return None
 
-market_id = get_todays_maket()
-market_id
+        events = result.get('events', [])
+        if not events:
+            return None
+
+        # Sort by strike_date (earliest first)
+        sorted_events = sorted(
+            events,
+            key=lambda x: x.get('strike_date', '9999-12-31T23:59:59Z')
+        )
+
+        event = sorted_events[0]
+        markets = event.get("markets", [])
+
+        if not markets:
+            return None
+
+        # Compute most likely outcome
+        ranked = sorted(
+            [(m["ticker"], implied_probability(m), m) for m in markets],
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        most_likely_ticker, most_likely_prob, most_likely_market = ranked[0]
+
+        # Extract price component from ticker (everything after the trailing 'B')
+        price = most_likely_ticker.split("B")[-1]
+
+        return {
+            'price': price,
+            'probability': most_likely_prob,
+            'ticker': most_likely_ticker,
+            'yes_bid': most_likely_market.get('yes_bid'),
+            'no_ask': most_likely_market.get('no_ask'),
+            'event': event
+        }
+
+    except Exception as e:
+        print(f"Error fetching Kalshi market: {e}")
+        return None
