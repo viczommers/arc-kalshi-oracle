@@ -28,6 +28,7 @@ const networkName = document.getElementById('networkName');
 const usdcBalance = document.getElementById('usdcBalance');
 const eurcBalance = document.getElementById('eurcBalance');
 const refreshBalances = document.getElementById('refreshBalances');
+const getTokensBtn = document.getElementById('getTokensBtn');
 const oracleForm = document.getElementById('oracleForm');
 const submitBtn = document.getElementById('submitBtn');
 const result = document.getElementById('result');
@@ -45,6 +46,7 @@ connectBtn.addEventListener('click', () => {
 });
 disconnectBtn.addEventListener('click', disconnectWallet);
 refreshBalances.addEventListener('click', loadBalances);
+getTokensBtn.addEventListener('click', mintTestTokens);
 oracleForm.addEventListener('submit', submitOracleData);
 
 // Initialize
@@ -123,6 +125,7 @@ async function connectWallet() {
         connectBtn.classList.add('hidden');
         walletInfo.classList.remove('hidden');
         refreshBalances.disabled = false;
+        getTokensBtn.disabled = false;
         submitBtn.disabled = false;
 
         // Load balances
@@ -144,6 +147,7 @@ function disconnectWallet() {
     connectBtn.classList.remove('hidden');
     walletInfo.classList.add('hidden');
     refreshBalances.disabled = true;
+    getTokensBtn.disabled = true;
     submitBtn.disabled = true;
 
     usdcBalance.textContent = '--';
@@ -171,6 +175,48 @@ async function loadBalances() {
     } catch (error) {
         console.error('Failed to load balances:', error);
         showResult('Failed to load balances', 'error');
+    }
+}
+
+async function mintTestTokens() {
+    if (!userAddress) {
+        showResult('Please connect your wallet first', 'error');
+        return;
+    }
+
+    getTokensBtn.disabled = true;
+    getTokensBtn.textContent = 'Minting...';
+
+    try {
+        const response = await fetch(`/mint-tokens?address=${userAddress}`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            let message = 'Test tokens minted successfully!<br>';
+
+            if (data.results.USDC && data.results.USDC.success) {
+                message += `USDC: ${data.results.USDC.amount} tokens<br>`;
+            }
+            if (data.results.EURC && data.results.EURC.success) {
+                message += `EURC: ${data.results.EURC.amount} tokens<br>`;
+            }
+
+            showResult(message, 'success');
+
+            // Refresh balances after minting
+            setTimeout(() => loadBalances(), 2000);
+        } else {
+            showResult(`Error: ${data.detail || 'Failed to mint tokens'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to mint tokens:', error);
+        showResult(`Failed to mint tokens: ${error.message}`, 'error');
+    } finally {
+        getTokensBtn.disabled = false;
+        getTokensBtn.textContent = 'Get Test Tokens';
     }
 }
 

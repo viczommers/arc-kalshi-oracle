@@ -33,9 +33,12 @@ app.add_middleware(
 
 # Configuration
 RPC_URL = "https://rpc.testnet.arc.network"
-# Token addresses on ARC Testnet (update these with actual addresses)
+# Token addresses on ARC Testnet
 USDC_ADDRESS = "0x3600000000000000000000000000000000000000"  # Update with actual USDC address
 EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a"  # Update with actual EURC address
+# Mock token addresses for testing
+MOCK_USDC_ADDRESS = "0xB0F5067211bBCBc4E8302E5b52939086d4397bBe"  # Update with deployed Mock USDC address
+MOCK_EURC_ADDRESS = "0xd927Fe415c5e74F103A104A9313DDbae26125D1F"  # Update with deployed Mock EURC address
 CONTRACT_ADDRESS = "0xc1256868D57378ef0309928Dedce736815A8bC41"
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")  # Set via environment variable
 
@@ -98,7 +101,7 @@ CONTRACT_ABI = [
     }
 ]
 
-# ERC20 Token ABI for balance checking
+# ERC20 Token ABI for balance checking and minting
 ERC20_ABI = [
     {
         "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
@@ -119,6 +122,16 @@ ERC20_ABI = [
         "name": "symbol",
         "outputs": [{"internalType": "string", "name": "", "type": "string"}],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "to", "type": "address"},
+            {"internalType": "uint256", "name": "amount", "type": "uint256"}
+        ],
+        "name": "mint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     }
 ]
@@ -235,6 +248,114 @@ async def get_token_balances(address: Optional[str] = None):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch balances: {str(e)}")
+
+
+@app.post("/mint-tokens")
+async def mint_test_tokens(address: str):
+    """Mint test USDC and EURC tokens to a user's address"""
+
+    # Validate private key is configured
+    if not PRIVATE_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="Private key not configured. Set PRIVATE_KEY environment variable."
+        )
+
+    try:
+        # Convert to checksum address
+        checksum_address = Web3.to_checksum_address(address)
+
+        # Get account from private key
+        account = Account.from_key(PRIVATE_KEY)
+
+        # Amount to mint: 1000 tokens (with 18 decimals)
+        mint_amount = 1000 * (10 ** 18)
+
+        results = {}
+
+        # Mint Mock USDC
+        if MOCK_USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
+            try:
+                usdc_contract = w3.eth.contract(
+                    address=Web3.to_checksum_address(MOCK_USDC_ADDRESS),
+                    abi=ERC20_ABI
+                )
+
+                # Build mint transaction for USDC
+                nonce = w3.eth.get_transaction_count(account.address)
+                gas_estimate = usdc_contract.functions.mint(
+                    checksum_address,
+                    mint_amount
+                ).estimate_gas({'from': account.address})
+
+                transaction = usdc_contract.functions.mint(
+                    checksum_address,
+                    mint_amount
+                ).build_transaction({
+                    'from': account.address,
+                    'nonce': nonce,
+                    'gas': gas_estimate + 10000,
+                    'gasPrice': w3.eth.gas_price,
+                })
+
+                # Sign and send transaction
+                signed_txn = account.sign_transaction(transaction)
+                tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+                tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+                results["USDC"] = {
+                    "success": tx_receipt['status'] == 1,
+                    "transaction_hash": tx_hash.hex(),
+                    "amount": "1000"
+                }
+            except Exception as e:
+                results["USDC"] = {"error": str(e)}
+
+        # Mint Mock EURC
+        if MOCK_EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
+            try:
+                eurc_contract = w3.eth.contract(
+                    address=Web3.to_checksum_address(MOCK_EURC_ADDRESS),
+                    abi=ERC20_ABI
+                )
+
+                # Build mint transaction for EURC
+                nonce = w3.eth.get_transaction_count(account.address)
+                gas_estimate = eurc_contract.functions.mint(
+                    checksum_address,
+                    mint_amount
+                ).estimate_gas({'from': account.address})
+
+                transaction = eurc_contract.functions.mint(
+                    checksum_address,
+                    mint_amount
+                ).build_transaction({
+                    'from': account.address,
+                    'nonce': nonce,
+                    'gas': gas_estimate + 10000,
+                    'gasPrice': w3.eth.gas_price,
+                })
+
+                # Sign and send transaction
+                signed_txn = account.sign_transaction(transaction)
+                tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+                tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+                results["EURC"] = {
+                    "success": tx_receipt['status'] == 1,
+                    "transaction_hash": tx_hash.hex(),
+                    "amount": "1000"
+                }
+            except Exception as e:
+                results["EURC"] = {"error": str(e)}
+
+        return {
+            "success": True,
+            "address": checksum_address,
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to mint tokens: {str(e)}")
 
 
 @app.get("/kalshi/market")
