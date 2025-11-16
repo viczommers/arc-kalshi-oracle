@@ -13,7 +13,9 @@
 
 * ⁠Smart contracts trigger automated rebalancing based on prediction market insights
 
-* ⁠First-of-its-kind integration of prediction markets with DeFi liquidity pools
+* ⁠First-of-its-kind integration of prediction markets with DeFi primitives
+
+* Allows multiple people to participate in the treasury and each participant will receive an allocation of **PST** (**Pool Share Token**) proportional to their contribution and at the same time your PST will remain the same despite the re-balancing (you will be able to withdraw at any time and you will receive the optimum balance that will maintain your purchasing power).
 
 **The Opportunity:**
 Institutional treasuries, DAOs, and digital custodians need automated currency allocation that aligns with verified market expectations. Our solution provides:
