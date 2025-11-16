@@ -32,7 +32,8 @@ Institutional treasuries, DAOs, and digital custodians need automated currency a
 
 **The Goal:** Build upon our oracle foundation to create new use cases for predictive finance in decentralized treasury management.
 
-> We are ready to build the future of automated stablecoin portfolio management.
+
+We are ready to build the future of automated stablecoin portfolio management.
 
 ---
 
@@ -66,6 +67,11 @@ graph TD
 For more details on how the first main contract (treasury) and second smart contract (oracle) works, see below.
 
 ---
+
+## Kalshi Oracle
+A FastAPI server polls the Kalshi prediction market API and determines the odds of the direction of EUR/USD FX rates. It records this on Arc through the **KalshiLinkOracle** smart contract. Based on the odds, it autonomously calculates the adjustment needed to rebalance the pool.
+
+
 
 ## Installation
 
