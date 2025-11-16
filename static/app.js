@@ -18,6 +18,7 @@ const ARC_TESTNET = {
 // Token addresses
 const MOCK_USDC_ADDRESS = '0xB0F5067211bBCBc4E8302E5b52939086d4397bBe';
 const MOCK_EURC_ADDRESS = '0xd927Fe415c5e74F103A104A9313DDbae26125D1F';
+const PST_TOKEN_ADDRESS = '0xF08388dd53031187497eD4c2EaBDb54a8aF5cb1E';
 const ORACLE_CONTRACT_ADDRESS = '0xc1256868D57378ef0309928Dedce736815A8bC41';
 const TREASURY_CONTRACT_ADDRESS = '0xB241a0d436446AAd90Be026306F2cdaE26FB712f';
 
@@ -50,6 +51,13 @@ const TREASURY_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+        "name": "withdrawAndBurn",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
 ];
 
@@ -68,6 +76,7 @@ const eurcBalance = document.getElementById('eurcBalance');
 const refreshBalances = document.getElementById('refreshBalances');
 const getTokensBtn = document.getElementById('getTokensBtn');
 const approveAndDepositBtn = document.getElementById('approveAndDepositBtn');
+const approveAndWithdrawBtn = document.getElementById('approveAndWithdrawBtn');
 const approveTokensBtn = document.getElementById('approveTokensBtn');
 const depositAllBtn = document.getElementById('depositAllBtn');
 const oracleForm = document.getElementById('oracleForm');
@@ -89,6 +98,7 @@ disconnectBtn.addEventListener('click', disconnectWallet);
 refreshBalances.addEventListener('click', loadBalances);
 getTokensBtn.addEventListener('click', mintTestTokens);
 approveAndDepositBtn.addEventListener('click', approveAndDeposit);
+approveAndWithdrawBtn.addEventListener('click', approveAndWithdraw);
 approveTokensBtn.addEventListener('click', approveTokens);
 depositAllBtn.addEventListener('click', depositAllTokens);
 oracleForm.addEventListener('submit', submitOracleData);
@@ -171,6 +181,7 @@ async function connectWallet() {
         refreshBalances.disabled = false;
         getTokensBtn.disabled = false;
         approveAndDepositBtn.disabled = false;
+        approveAndWithdrawBtn.disabled = false;
         approveTokensBtn.disabled = false;
         depositAllBtn.disabled = true; // Keep disabled until approvals
         submitBtn.disabled = false;
@@ -196,6 +207,7 @@ function disconnectWallet() {
     refreshBalances.disabled = true;
     getTokensBtn.disabled = true;
     approveAndDepositBtn.disabled = true;
+    approveAndWithdrawBtn.disabled = true;
     approveTokensBtn.disabled = true;
     depositAllBtn.disabled = true;
     submitBtn.disabled = true;
@@ -457,6 +469,68 @@ async function depositAllTokens() {
     } finally {
         depositAllBtn.disabled = false;
         depositAllBtn.textContent = 'Deposit Only';
+    }
+}
+
+async function approveAndWithdraw() {
+    if (!signer) {
+        showResult('Please connect your wallet first', 'error');
+        return;
+    }
+
+    approveAndWithdrawBtn.disabled = true;
+    approveAndWithdrawBtn.textContent = 'Step 1/2: Approving PST...';
+
+    try {
+        // Step 1: Get PST balance and approve
+        const pstContract = new ethers.Contract(PST_TOKEN_ADDRESS, ERC20_ABI, signer);
+        const pstBalance = await pstContract.balanceOf(userAddress);
+
+        if (pstBalance.eq(0)) {
+            showResult('You have no PST tokens to withdraw', 'error');
+            approveAndWithdrawBtn.disabled = false;
+            approveAndWithdrawBtn.textContent = 'Approve & Withdraw PST';
+            return;
+        }
+
+        // Approve Treasury to spend PST
+        try {
+            const approveTx = await pstContract.approve(TREASURY_CONTRACT_ADDRESS, pstBalance);
+            await approveTx.wait();
+        } catch (error) {
+            console.error('PST approval error:', error);
+            showResult('PST approval failed', 'error');
+            approveAndWithdrawBtn.disabled = false;
+            approveAndWithdrawBtn.textContent = 'Approve & Withdraw PST';
+            return;
+        }
+
+        // Step 2: Withdraw and burn PST
+        approveAndWithdrawBtn.textContent = 'Step 2/2: Withdrawing...';
+
+        const treasuryContract = new ethers.Contract(TREASURY_CONTRACT_ADDRESS, TREASURY_ABI, signer);
+        const tx = await treasuryContract.withdrawAndBurn(pstBalance);
+
+        showResult('Transaction submitted! Waiting for confirmation...', 'success');
+
+        const receipt = await tx.wait();
+
+        // Format PST amount for display
+        const pstBalanceFormatted = ethers.utils.formatUnits(pstBalance, 18);
+
+        showResult(
+            `Success! ${parseFloat(pstBalanceFormatted).toFixed(2)} PST burned!<br>USDC and EURC returned to your wallet<br>Transaction: ${receipt.transactionHash.substring(0, 10)}...<br>Block: ${receipt.blockNumber}`,
+            'success'
+        );
+
+        // Refresh balances after withdrawal
+        setTimeout(() => loadBalances(), 2000);
+    } catch (error) {
+        console.error('Failed to withdraw:', error);
+        showResult(`Failed to withdraw: ${error.message}`, 'error');
+    } finally {
+        approveAndWithdrawBtn.disabled = false;
+        approveAndWithdrawBtn.textContent = 'Approve & Withdraw PST';
     }
 }
 
