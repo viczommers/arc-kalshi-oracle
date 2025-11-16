@@ -189,7 +189,7 @@ async def health_check():
 
 @app.get("/balance")
 async def get_token_balances(address: Optional[str] = None):
-    """Get USDC and EURC token balances for an address on ARC Testnet"""
+    """Get Mock USDC and EURC token balances for an address on ARC Testnet"""
     # Default to the specified address if none provided
     target_address = address or "0x420694f95287e8552cdc2e7d68e81a294f23035e"
 
@@ -199,11 +199,11 @@ async def get_token_balances(address: Optional[str] = None):
 
         balances = {}
 
-        # Get USDC balance
-        if USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
+        # Get Mock USDC balance
+        if MOCK_USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
             try:
                 usdc_contract = w3.eth.contract(
-                    address=Web3.to_checksum_address(USDC_ADDRESS),
+                    address=Web3.to_checksum_address(MOCK_USDC_ADDRESS),
                     abi=ERC20_ABI
                 )
                 usdc_balance = usdc_contract.functions.balanceOf(checksum_address).call()
@@ -215,16 +215,16 @@ async def get_token_balances(address: Optional[str] = None):
                     "balance_raw": str(usdc_balance),
                     "balance": str(usdc_balance / (10 ** usdc_decimals)),
                     "decimals": usdc_decimals,
-                    "contract_address": USDC_ADDRESS
+                    "contract_address": MOCK_USDC_ADDRESS
                 }
             except Exception as e:
                 balances["USDC"] = {"error": str(e)}
 
-        # Get EURC balance
-        if EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
+        # Get Mock EURC balance
+        if MOCK_EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
             try:
                 eurc_contract = w3.eth.contract(
-                    address=Web3.to_checksum_address(EURC_ADDRESS),
+                    address=Web3.to_checksum_address(MOCK_EURC_ADDRESS),
                     abi=ERC20_ABI
                 )
                 eurc_balance = eurc_contract.functions.balanceOf(checksum_address).call()
@@ -236,7 +236,7 @@ async def get_token_balances(address: Optional[str] = None):
                     "balance_raw": str(eurc_balance),
                     "balance": str(eurc_balance / (10 ** eurc_decimals)),
                     "decimals": eurc_decimals,
-                    "contract_address": EURC_ADDRESS
+                    "contract_address": MOCK_EURC_ADDRESS
                 }
             except Exception as e:
                 balances["EURC"] = {"error": str(e)}
@@ -252,7 +252,7 @@ async def get_token_balances(address: Optional[str] = None):
 
 @app.post("/mint-tokens")
 async def mint_test_tokens(address: str):
-    """Mint test USDC and EURC tokens to a user's address"""
+    """Mint Mock USDC and EURC tokens matching the user's real token balances"""
 
     # Validate private key is configured
     if not PRIVATE_KEY:
@@ -268,29 +268,43 @@ async def mint_test_tokens(address: str):
         # Get account from private key
         account = Account.from_key(PRIVATE_KEY)
 
-        # Amount to mint: 1000 tokens (with 18 decimals)
-        mint_amount = 1000 * (10 ** 18)
-
         results = {}
 
-        # Mint Mock USDC
+        # Get real USDC balance and mint matching Mock USDC
         if MOCK_USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
             try:
-                usdc_contract = w3.eth.contract(
+                mock_usdc_contract = w3.eth.contract(
                     address=Web3.to_checksum_address(MOCK_USDC_ADDRESS),
                     abi=ERC20_ABI
                 )
 
-                # Build mint transaction for USDC
+                # Get real USDC balance
+                if USDC_ADDRESS != "0x0000000000000000000000000000000000000000":
+                    real_usdc_contract = w3.eth.contract(
+                        address=Web3.to_checksum_address(USDC_ADDRESS),
+                        abi=ERC20_ABI
+                    )
+                    real_usdc_balance = real_usdc_contract.functions.balanceOf(checksum_address).call()
+                    real_usdc_decimals = real_usdc_contract.functions.decimals().call()
+
+                    # Multiply by 10^12 to convert from 6 decimals to 18 decimals
+                    mock_usdc_mint_amount = real_usdc_balance * (10 ** 12)
+                    usdc_balance_formatted = real_usdc_balance / (10 ** real_usdc_decimals)
+                else:
+                    # Default to 1000 if no real USDC address configured
+                    usdc_balance_formatted = 1000
+                    mock_usdc_mint_amount = 1000 * (10 ** 18)
+
+                # Build mint transaction for Mock USDC
                 nonce = w3.eth.get_transaction_count(account.address)
-                gas_estimate = usdc_contract.functions.mint(
+                gas_estimate = mock_usdc_contract.functions.mint(
                     checksum_address,
-                    mint_amount
+                    mock_usdc_mint_amount
                 ).estimate_gas({'from': account.address})
 
-                transaction = usdc_contract.functions.mint(
+                transaction = mock_usdc_contract.functions.mint(
                     checksum_address,
-                    mint_amount
+                    mock_usdc_mint_amount
                 ).build_transaction({
                     'from': account.address,
                     'nonce': nonce,
@@ -306,29 +320,47 @@ async def mint_test_tokens(address: str):
                 results["USDC"] = {
                     "success": tx_receipt['status'] == 1,
                     "transaction_hash": tx_hash.hex(),
-                    "amount": "1000"
+                    "amount": str(usdc_balance_formatted),
+                    "matched_real_balance": True
                 }
             except Exception as e:
                 results["USDC"] = {"error": str(e)}
 
-        # Mint Mock EURC
+        # Get real EURC balance and mint matching Mock EURC
         if MOCK_EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
             try:
-                eurc_contract = w3.eth.contract(
+                mock_eurc_contract = w3.eth.contract(
                     address=Web3.to_checksum_address(MOCK_EURC_ADDRESS),
                     abi=ERC20_ABI
                 )
 
-                # Build mint transaction for EURC
+                # Get real EURC balance
+                if EURC_ADDRESS != "0x0000000000000000000000000000000000000000":
+                    real_eurc_contract = w3.eth.contract(
+                        address=Web3.to_checksum_address(EURC_ADDRESS),
+                        abi=ERC20_ABI
+                    )
+                    real_eurc_balance = real_eurc_contract.functions.balanceOf(checksum_address).call()
+                    real_eurc_decimals = real_eurc_contract.functions.decimals().call()
+
+                    # Multiply by 10^12 to convert from 6 decimals to 18 decimals
+                    mock_eurc_mint_amount = real_eurc_balance * (10 ** 12)
+                    eurc_balance_formatted = real_eurc_balance / (10 ** real_eurc_decimals)
+                else:
+                    # Default to 1000 if no real EURC address configured
+                    eurc_balance_formatted = 1000
+                    mock_eurc_mint_amount = 1000 * (10 ** 18)
+
+                # Build mint transaction for Mock EURC
                 nonce = w3.eth.get_transaction_count(account.address)
-                gas_estimate = eurc_contract.functions.mint(
+                gas_estimate = mock_eurc_contract.functions.mint(
                     checksum_address,
-                    mint_amount
+                    mock_eurc_mint_amount
                 ).estimate_gas({'from': account.address})
 
-                transaction = eurc_contract.functions.mint(
+                transaction = mock_eurc_contract.functions.mint(
                     checksum_address,
-                    mint_amount
+                    mock_eurc_mint_amount
                 ).build_transaction({
                     'from': account.address,
                     'nonce': nonce,
@@ -344,7 +376,8 @@ async def mint_test_tokens(address: str):
                 results["EURC"] = {
                     "success": tx_receipt['status'] == 1,
                     "transaction_hash": tx_hash.hex(),
-                    "amount": "1000"
+                    "amount": str(eurc_balance_formatted),
+                    "matched_real_balance": True
                 }
             except Exception as e:
                 results["EURC"] = {"error": str(e)}
