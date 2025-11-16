@@ -2,6 +2,7 @@
 let provider;
 let signer;
 let userAddress;
+let proportionsInterval = null;
 
 const ARC_TESTNET = {
     chainId: '0x4CEF52', // 314098 in decimal (Arc Testnet)
@@ -58,6 +59,20 @@ const TREASURY_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "eurToUsdProportion",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "usdToEurProportion",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
     }
 ];
 
@@ -73,6 +88,8 @@ const walletAddress = document.getElementById('walletAddress');
 const networkName = document.getElementById('networkName');
 const usdcBalance = document.getElementById('usdcBalance');
 const eurcBalance = document.getElementById('eurcBalance');
+const usdToEurProp = document.getElementById('usdToEurProp');
+const eurToUsdProp = document.getElementById('eurToUsdProp');
 const refreshBalances = document.getElementById('refreshBalances');
 const getTokensBtn = document.getElementById('getTokensBtn');
 const approveAndDepositBtn = document.getElementById('approveAndDepositBtn');
@@ -189,6 +206,14 @@ async function connectWallet() {
         // Load balances
         await loadBalances();
 
+        // Start auto-refresh for treasury proportions every 5 seconds
+        if (proportionsInterval) {
+            clearInterval(proportionsInterval);
+        }
+        proportionsInterval = setInterval(() => {
+            loadTreasuryProportions();
+        }, 5000);
+
         showResult('Wallet connected successfully!', 'success');
         setTimeout(() => result.classList.add('hidden'), 3000);
     } catch (error) {
@@ -202,6 +227,12 @@ function disconnectWallet() {
     signer = null;
     userAddress = null;
 
+    // Stop auto-refresh interval
+    if (proportionsInterval) {
+        clearInterval(proportionsInterval);
+        proportionsInterval = null;
+    }
+
     connectBtn.classList.remove('hidden');
     walletInfo.classList.add('hidden');
     refreshBalances.disabled = true;
@@ -214,6 +245,8 @@ function disconnectWallet() {
 
     usdcBalance.textContent = '--';
     eurcBalance.textContent = '--';
+    usdToEurProp.textContent = '--';
+    eurToUsdProp.textContent = '--';
 }
 
 async function loadBalances() {
@@ -234,9 +267,42 @@ async function loadBalances() {
                 ? 'Error'
                 : parseFloat(data.balances.EURC.balance).toFixed(2);
         }
+
+        // Load treasury proportions
+        await loadTreasuryProportions();
     } catch (error) {
         console.error('Failed to load balances:', error);
         showResult('Failed to load balances', 'error');
+    }
+}
+
+async function loadTreasuryProportions() {
+    try {
+        if (!provider) return;
+
+        const treasuryContract = new ethers.Contract(
+            TREASURY_CONTRACT_ADDRESS,
+            TREASURY_ABI,
+            provider
+        );
+
+        // Use blockTag 'latest' to get fresh data
+        const [usdToEur, eurToUsd] = await Promise.all([
+            treasuryContract.usdToEurProportion({ blockTag: 'latest' }),
+            treasuryContract.eurToUsdProportion({ blockTag: 'latest' })
+        ]);
+
+        // Convert from wei (10^18) to percentage
+        const usdToEurPercent = parseFloat(ethers.utils.formatUnits(usdToEur, 18));
+        const eurToUsdPercent = parseFloat(ethers.utils.formatUnits(eurToUsd, 18));
+
+        // Display proportions
+        usdToEurProp.textContent = usdToEurPercent.toFixed(0);
+        eurToUsdProp.textContent = eurToUsdPercent.toFixed(0);
+    } catch (error) {
+        console.error('Failed to load treasury proportions:', error);
+        usdToEurProp.textContent = 'Error';
+        eurToUsdProp.textContent = 'Error';
     }
 }
 
