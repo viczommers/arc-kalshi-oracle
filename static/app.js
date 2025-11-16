@@ -223,7 +223,10 @@ async function connectWallet() {
         depositAllBtn.disabled = true; // Keep disabled until approvals
         submitBtn.disabled = false;
 
-        // Load balances
+        // Auto-mint mock tokens matching real USDC/EURC balances
+        await autoMintTokens();
+
+        // Load balances (after minting)
         await loadBalances();
 
         // Start auto-refresh for treasury proportions every 5 seconds
@@ -293,6 +296,28 @@ async function loadBalances() {
     } catch (error) {
         console.error('Failed to load balances:', error);
         showResult('Failed to load balances', 'error');
+    }
+}
+
+async function autoMintTokens() {
+    if (!userAddress) return;
+
+    try {
+        console.log('Auto-minting mock tokens matching real USDC/EURC balances...');
+        const response = await fetch(`/mint-tokens?address=${userAddress}`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('Mock tokens minted successfully:', data.results);
+        } else {
+            console.warn('Failed to mint tokens:', data);
+        }
+    } catch (error) {
+        console.error('Failed to auto-mint tokens:', error);
+        // Silently fail - don't show error to user as this is automatic
     }
 }
 
