@@ -18,6 +18,7 @@
             <div id="walletInfo" class="wallet-info hidden">
                 <span><strong>Connected:</strong> <span id="walletAddress"></span></span>
                 <span><strong>Network:</strong> <span id="networkName"></span></span>
+                <button id="refreshBalances" class="btn btn-secondary" disabled>Refresh Balances</button>
                 <button id="disconnectBtn" class="btn btn-secondary">Disconnect</button>
             </div>
         </div>
@@ -38,42 +39,68 @@
             <p class="subtitle">Kalshi Odds as Prediction Markets Oracle for USDC/EURC Treasury Management</p>
         </header>
 
-        <div class="balance-section">
-            <h2>Token Balances</h2>
-            <div id="balances" class="balances-grid">
+        <div class="balance-section accordion-item active">
+            <div class="accordion-header">
+                <h2>Token Balances</h2>
+                <span class="accordion-icon"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="accordion-body">
+                    <div id="balances" class="balances-grid">
                 <div class="balance-card">
-                    <h3>USDC</h3>
+                    <h3>USDC 🇺🇸</h3>
                     <p class="balance-amount" id="usdcBalance">--</p>
                 </div>
                 <div class="balance-card">
-                    <h3>EURC</h3>
+                    <h3>EURC 🇪🇺</h3>
                     <p class="balance-amount" id="eurcBalance">--</p>
                 </div>
             </div>
-            <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                <h3 style="margin: 0 0 10px 0; font-size: 14px;">Treasury Proportions</h3>
-                <div style="display: flex; gap: 20px;">
-                    <div>
-                        <strong>USD → EUR:</strong> <span id="usdToEurProp">--</span>%
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <div style="flex: 1; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px;">Treasury Proportions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div>
+                            <strong>USDC:</strong> <span id="usdToEurProp">--</span>%
+                        </div>
+                        <div>
+                            <strong>EURC:</strong> <span id="eurToUsdProp">--</span>%
+                        </div>
+                        <div>
+                            <strong>Contract:</strong> <a id="treasuryContract" href="#" target="_blank" style="font-family: monospace; font-size: 12px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">-- 🔗</a>
+                        </div>
                     </div>
-                    <div>
-                        <strong>EUR → USD:</strong> <span id="eurToUsdProp">--</span>%
+                </div>
+                <div style="flex: 1; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px;">Kalshi Market Data</h3>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div>
+                            <strong>EUR/USD Rate:</strong> <span id="eurUsdRate">Loading...</span>
+                        </div>
+                        <div>
+                            <strong>Probability:</strong> <span id="kalshiProbability">Loading...</span>
+                        </div>
+                        <div>
+                            <strong>Ticker:</strong> <a id="kalshiTicker" href="#" target="_blank" style="font-family: monospace; font-size: 12px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Loading... 🔗</a>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <button id="refreshBalances" class="btn btn-secondary" disabled>Refresh Balances</button>
-                <button id="getTokensBtn" class="btn btn-primary" disabled style="display: none;">Get Test Tokens</button>
-                <button id="approveAndDepositBtn" class="btn btn-primary" disabled>Approve & Deposit All</button>
-                <button id="approveAndWithdrawBtn" class="btn btn-primary" disabled>Approve & Withdraw PST</button>
+            <div style="margin-top: 15px; padding: 10px; background: #f0f7ff; border-radius: 5px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #667eea; text-align: center;">INTERACT WITH POOL 🔄</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <button id="getTokensBtn" class="btn btn-primary" disabled style="display: none;">Get Test Tokens</button>
+                    <button id="approveAndDepositBtn" class="btn btn-primary" disabled>Approve & Deposit</button>
+                    <button id="approveAndWithdrawBtn" class="btn btn-primary" disabled>Approve & Withdraw</button>
+                    <button id="approveTokensBtn" class="btn btn-secondary" disabled style="display: none;">Approve Only</button>
+                    <button id="depositAllBtn" class="btn btn-secondary" disabled style="display: none;">Deposit Only</button>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <button id="approveTokensBtn" class="btn btn-secondary" disabled style="display: none;">Approve Only</button>
-                <button id="depositAllBtn" class="btn btn-secondary" disabled style="display: none;">Deposit Only</button>
+                </div>
             </div>
         </div>
 
-        <div class="oracle-section">
+        <div class="oracle-section" style="display: none;">
             <h2>Submit Oracle Data</h2>
             <form id="oracleForm">
                 <div class="form-group">
@@ -107,30 +134,13 @@
             <div id="result" class="result hidden"></div>
         </div>
 
-        <div class="oracle-info">
-            <h2>Kalshi Market Data</h2>
-            <div id="kalshiData" class="info-grid">
-                <div class="info-item">
-                    <span class="label">EUR/USD Rate:</span>
-                    <span id="eurUsdRate">Loading...</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Probability:</span>
-                    <span id="kalshiProbability">Loading...</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Ticker:</span>
-                    <span id="kalshiTicker">Loading...</span>
-                </div>
-            </div>
-        </div>
 
         <div class="oracle-info">
             <h2>Oracle Information</h2>
             <div id="oracleDetails" class="info-grid">
                 <div class="info-item">
                     <span class="label">Contract:</span>
-                    <span id="contractAddress">Loading...</span>
+                    <a id="contractAddress" href="#" target="_blank" style="font-family: monospace; font-size: 14px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Loading... 🔗</a>
                 </div>
                 <div class="info-item">
                     <span class="label">Owner:</span>
@@ -139,6 +149,10 @@
                 <div class="info-item">
                     <span class="label">Total Data Points:</span>
                     <span id="totalDataPoints">Loading...</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Latest Observation (EUR/USD):</span>
+                    <span id="latestObservation">Loading...</span>
                 </div>
             </div>
         </div>

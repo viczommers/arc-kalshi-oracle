@@ -152,7 +152,83 @@ h1 {
     animation: fadeIn 2s ease-in-out 0s forwards;
 }
 
-.balance-section,
+.balance-section {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.accordion-item {
+    margin-bottom: 1.5rem;
+}
+
+.accordion-header {
+    background: white;
+    padding: 1.5rem 2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+}
+
+.accordion-header:hover {
+    background: #f8f9fa;
+}
+
+.accordion-header h2 {
+    font-size: 1.5rem;
+    color: #333;
+    transition: color 0.3s ease;
+    font-weight: 600;
+    margin: 0;
+}
+
+.accordion-icon {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.accordion-icon::before {
+    content: '▼';
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.accordion-item.active .accordion-icon::before {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+    border-radius: 0 0 12px 12px;
+}
+
+.accordion-item.active .accordion-content {
+    max-height: 1000px;
+}
+
+.accordion-body {
+    padding: 0 2rem 2rem 2rem;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s;
+}
+
+.accordion-item.active .accordion-body {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .oracle-section,
 .oracle-info {
     background: white;
@@ -203,12 +279,14 @@ h2 {
     color: white;
 }
 
-#disconnectBtn {
+#disconnectBtn,
+#refreshBalances {
     background: rgba(108, 117, 125, 0.5);
     transition: background 0.3s ease;
 }
 
-#disconnectBtn:hover {
+#disconnectBtn:hover,
+#refreshBalances:hover:not(:disabled) {
     background: #6c757d;
 }
 
@@ -360,15 +438,33 @@ h2 {
     }
 
     .wallet-header-container {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         padding: 1rem;
-        gap: 0.75rem;
+        gap: 0.5rem;
+        justify-content: center;
     }
 
     .wallet-info {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         gap: 0.5rem;
-        text-align: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .wallet-info span {
+        font-size: 0.85rem;
+    }
+
+    .wallet-info button {
+        font-size: 0.85rem;
+        padding: 8px 16px;
+    }
+
+    #connectBtn {
+        font-size: 0.9rem;
+        padding: 10px 20px;
     }
 
     h1 {

@@ -112,11 +112,11 @@ CONTRACT_ABI = [
         "outputs": [
             {
                 "components": [
-                    {"internalType": "uint256", "name": "value", "type": "uint256"},
-                    {"internalType": "uint256", "name": "submitterTimestamp", "type": "uint256"},
-                    {"internalType": "uint256", "name": "resolutionTimestamp", "type": "uint256"},
                     {"internalType": "address", "name": "submitter", "type": "address"},
-                    {"internalType": "uint256", "name": "blockNumber", "type": "uint256"}
+                    {"internalType": "uint256", "name": "submitterTimestamp", "type": "uint256"},
+                    {"internalType": "uint256", "name": "blockNumber", "type": "uint256"},
+                    {"internalType": "uint256", "name": "value", "type": "uint256"},
+                    {"internalType": "uint256", "name": "resolutionTimestamp", "type": "uint256"}
                 ],
                 "internalType": "struct KalshiLinkOracle.DataPoint",
                 "name": "",
@@ -228,12 +228,24 @@ async def scheduled_oracle_update():
             # This represents the EUR/USD exchange rate
             price_float = float(price)
 
-            # Convert to oracle format (rate * 1000)
-            # For EUR/USD rate of 1.163, this would be 1163
-            oracle_value = int(price_float * 1000)
+            # Calculate target USD percentage based on EUR/USD exchange rate
+            # Formula: USD% = 100 / EUR/USD rate
+            # Example: EUR/USD = 1.163 → USD% = 100 / 1.163 = 86%
+            # Higher EUR/USD (strong EUR) → Lower USD%
+            # Lower EUR/USD (weak EUR) → Higher USD%
+            target_usd_perc = 100 / price_float
+
+            # Ensure target is in valid range (1-99%)
+            target_usd_perc = int(max(1, min(99, target_usd_perc)))
+
+            # Convert target USD percentage to oracle format (percentage * 1000)
+            # For 37% USD, this would be 37000
+            oracle_value = int(target_usd_perc * 1000)
 
             # Ensure value is in valid range
             oracle_value = max(1, min(99999, oracle_value))
+
+            logger.info(f"Calculated oracle value - EUR/USD: {price_float}, Target USD%: {target_usd_perc}%, Oracle value: {oracle_value}")
 
         except Exception as e:
             logger.error(f"Failed to fetch Kalshi data: {str(e)}")
@@ -278,27 +290,8 @@ async def scheduled_oracle_update():
 
         # Step 3: Rebalance treasury based on market data
         try:
-            # Calculate target USD percentage based on EUR/USD exchange rate
-            # EUR/USD typical range: 1.05 - 1.20
-            # If EUR/USD is high (e.g., 1.20), EUR is strong → hold more EUR (less USD)
-            # If EUR/USD is low (e.g., 1.05), EUR is weak → hold more USD
-
-            # Map EUR/USD rate (1.05 - 1.20) to USD percentage (25% - 75%)
-            # Higher EUR/USD → Lower USD percentage
-            min_rate = 1.05
-            max_rate = 1.20
-
-            # Clamp the rate to expected range
-            clamped_rate = max(min_rate, min(max_rate, price_float))
-
-            # Invert: higher EUR/USD rate means lower USD percentage
-            # Linear mapping: 1.05 → 75% USD, 1.20 → 25% USD
-            target_usd_perc = int(75 - ((clamped_rate - min_rate) / (max_rate - min_rate)) * 50)
-
-            # Ensure target is in valid range (25-75%)
-            target_usd_perc = max(25, min(75, target_usd_perc))
-
-            logger.info(f"Calculated rebalancing - EUR/USD: {price_float}, Target USD%: {target_usd_perc}%")
+            # Use the same target_usd_perc calculated above for oracle submission
+            logger.info(f"Rebalancing treasury - EUR/USD: {price_float}, Target USD%: {target_usd_perc}%")
 
             nonce = w3.eth.get_transaction_count(account.address)
 
@@ -613,11 +606,22 @@ async def get_oracle_info():
         owner = contract.functions.owner().call()
         next_index = contract.functions.nextIndexDataPoint().call()
 
+        # Get latest observation if there are any data points
+        latest_observation = None
+        if next_index > 0:
+            try:
+                data_point = contract.functions.getDataPoint(next_index - 1).call()
+                # DataPoint struct: (submitter, submitterTimestamp, blockNumber, value, resolutionTimestamp)
+                latest_observation = data_point[3]  # value is at index 3
+            except Exception as e:
+                print(f"Failed to fetch latest data point: {e}")
+
         return {
             "name": name,
             "owner": owner,
             "total_data_points": next_index,
-            "contract_address": CONTRACT_ADDRESS
+            "contract_address": CONTRACT_ADDRESS,
+            "latest_observation": latest_observation
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch oracle info: {str(e)}")
@@ -628,15 +632,16 @@ async def get_data_point(index: int):
     """Get a specific data point by index"""
     try:
         data_point = contract.functions.getDataPoint(index).call()
+        # DataPoint struct: (submitter, submitterTimestamp, blockNumber, value, resolutionTimestamp)
 
         return {
             "index": index,
-            "value": data_point[0],
-            "value_percentage": data_point[0] / 1000,
+            "submitter": data_point[0],
             "submission_timestamp": data_point[1],
-            "resolution_timestamp": data_point[2],
-            "submitter": data_point[3],
-            "block_number": data_point[4]
+            "block_number": data_point[2],
+            "value": data_point[3],
+            "value_percentage": data_point[3] / 1000,
+            "resolution_timestamp": data_point[4]
         }
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Data point not found: {str(e)}")

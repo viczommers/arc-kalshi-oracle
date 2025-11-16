@@ -105,6 +105,7 @@ const result = document.getElementById('result');
 const contractAddress = document.getElementById('contractAddress');
 const ownerAddress = document.getElementById('ownerAddress');
 const totalDataPoints = document.getElementById('totalDataPoints');
+const latestObservation = document.getElementById('latestObservation');
 
 // Kalshi Market Data
 const eurUsdRate = document.getElementById('eurUsdRate');
@@ -131,6 +132,13 @@ window.addEventListener('load', () => {
     console.log('Window loaded, initializing...');
     loadOracleInfo();
     loadKalshiMarketData();
+
+    // Set treasury contract address
+    const treasuryContractEl = document.getElementById('treasuryContract');
+    if (treasuryContractEl) {
+        treasuryContractEl.textContent = `${TREASURY_CONTRACT_ADDRESS.substring(0, 6)}...${TREASURY_CONTRACT_ADDRESS.substring(38)} 🔗`;
+        treasuryContractEl.href = `https://testnet.arcscan.app/address/${TREASURY_CONTRACT_ADDRESS}?tab=tokens`;
+    }
 
     // Start auto-refresh for Kalshi data every 30 seconds
     kalshiInterval = setInterval(() => {
@@ -571,9 +579,12 @@ async function approveAndWithdraw() {
             return;
         }
 
-        // Approve Treasury to spend PST
+        // Calculate half of PST balance
+        const halfPstBalance = pstBalance.div(2);
+
+        // Approve Treasury to spend half of PST
         try {
-            const approveTx = await pstContract.approve(TREASURY_CONTRACT_ADDRESS, pstBalance);
+            const approveTx = await pstContract.approve(TREASURY_CONTRACT_ADDRESS, halfPstBalance);
             await approveTx.wait();
         } catch (error) {
             console.error('PST approval error:', error);
@@ -583,18 +594,18 @@ async function approveAndWithdraw() {
             return;
         }
 
-        // Step 2: Withdraw and burn PST
+        // Step 2: Withdraw and burn half of PST
         approveAndWithdrawBtn.textContent = 'Step 2/2: Withdrawing...';
 
         const treasuryContract = new ethers.Contract(TREASURY_CONTRACT_ADDRESS, TREASURY_ABI, signer);
-        const tx = await treasuryContract.withdrawAndBurn(pstBalance);
+        const tx = await treasuryContract.withdrawAndBurn(halfPstBalance);
 
         showResult('Transaction submitted! Waiting for confirmation...', 'success');
 
         const receipt = await tx.wait();
 
         // Format PST amount for display
-        const pstBalanceFormatted = ethers.utils.formatUnits(pstBalance, 18);
+        const pstBalanceFormatted = ethers.utils.formatUnits(halfPstBalance, 18);
 
         showResult(
             `Success! ${parseFloat(pstBalanceFormatted).toFixed(2)} PST burned!<br>USDC and EURC returned to your wallet<br>Transaction: ${receipt.transactionHash.substring(0, 10)}...<br>Block: ${receipt.blockNumber}`,
@@ -617,14 +628,26 @@ async function loadOracleInfo() {
         const response = await fetch('/oracle/info');
         const data = await response.json();
 
-        contractAddress.textContent = data.contract_address;
+        contractAddress.textContent = `${data.contract_address.substring(0, 6)}...${data.contract_address.substring(38)} 🔗`;
+        contractAddress.href = `https://testnet.arcscan.app/address/${data.contract_address}`;
         ownerAddress.textContent = `${data.owner.substring(0, 6)}...${data.owner.substring(38)}`;
         totalDataPoints.textContent = data.total_data_points;
+
+        // Display latest observation if available
+        if (data.latest_observation !== undefined && data.latest_observation !== null) {
+            // Convert from contract format (value * 1000) to percentage
+            const percentage = data.latest_observation / 1000;
+            latestObservation.textContent = `${percentage.toFixed(3)}%`;
+        } else {
+            latestObservation.textContent = 'No data yet';
+        }
     } catch (error) {
         console.error('Failed to load oracle info:', error);
         contractAddress.textContent = 'Error';
+        contractAddress.href = '#';
         ownerAddress.textContent = 'Error';
         totalDataPoints.textContent = 'Error';
+        latestObservation.textContent = 'Error';
     }
 }
 
@@ -648,17 +671,27 @@ async function loadKalshiMarketData() {
             }
 
             // Display ticker
-            kalshiTicker.textContent = market.ticker || 'N/A';
+            if (market.ticker) {
+                kalshiTicker.textContent = `${market.ticker} 🔗`;
+                // Use event_ticker from the event object for the URL
+                const eventId = market.event?.event_ticker || market.ticker;
+                kalshiTicker.href = `https://demo.kalshi.co/markets/kxeurusd/eurusd-daily-range/${eventId.toLowerCase()}`;
+            } else {
+                kalshiTicker.textContent = 'N/A';
+                kalshiTicker.href = '#';
+            }
         } else {
             eurUsdRate.textContent = 'No data';
             kalshiProbability.textContent = 'No data';
             kalshiTicker.textContent = 'No data';
+            kalshiTicker.href = '#';
         }
     } catch (error) {
         console.error('Failed to load Kalshi market data:', error);
         eurUsdRate.textContent = 'Error';
         kalshiProbability.textContent = 'Error';
         kalshiTicker.textContent = 'Error';
+        kalshiTicker.href = '#';
     }
 }
 
@@ -853,3 +886,20 @@ if (document.getElementById('word1') && document.getElementById('word2')) {
     scrambleText(document.getElementById('word1'), 'DELPHI', 2000);
     scrambleText(document.getElementById('word2'), 'POOL', 2000);
 }
+
+// Accordion functionality
+const accordionItems = document.querySelectorAll('.accordion-item');
+
+accordionItems.forEach(item => {
+    const header = item.querySelector('.accordion-header');
+
+    if (header) {
+        header.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            accordionItems.forEach(i => i.classList.remove('active'));
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    }
+});
