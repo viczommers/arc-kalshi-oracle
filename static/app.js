@@ -15,6 +15,33 @@ const ARC_TESTNET = {
     blockExplorerUrls: ['https://testnet.arcscan.com/']
 };
 
+// Token addresses
+const MOCK_USDC_ADDRESS = '0xB0F5067211bBCBc4E8302E5b52939086d4397bBe';
+const MOCK_EURC_ADDRESS = '0xd927Fe415c5e74F103A104A9313DDbae26125D1F';
+const ORACLE_CONTRACT_ADDRESS = '0xc1256868D57378ef0309928Dedce736815A8bC41';
+const TREASURY_CONTRACT_ADDRESS = '0x241b2Ad926b3E47E5d1C27A4a031B5D00Bc09228';
+
+// ERC20 ABI for approve and balanceOf functions
+const ERC20_ABI = [
+    {
+        "inputs": [
+            {"internalType": "address", "name": "spender", "type": "address"},
+            {"internalType": "uint256", "name": "amount", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
 // Check if ethers is loaded
 console.log('Ethers loaded:', typeof ethers !== 'undefined');
 console.log('MetaMask detected:', typeof window.ethereum !== 'undefined');
@@ -29,6 +56,7 @@ const usdcBalance = document.getElementById('usdcBalance');
 const eurcBalance = document.getElementById('eurcBalance');
 const refreshBalances = document.getElementById('refreshBalances');
 const getTokensBtn = document.getElementById('getTokensBtn');
+const approveTokensBtn = document.getElementById('approveTokensBtn');
 const oracleForm = document.getElementById('oracleForm');
 const submitBtn = document.getElementById('submitBtn');
 const result = document.getElementById('result');
@@ -47,6 +75,7 @@ connectBtn.addEventListener('click', () => {
 disconnectBtn.addEventListener('click', disconnectWallet);
 refreshBalances.addEventListener('click', loadBalances);
 getTokensBtn.addEventListener('click', mintTestTokens);
+approveTokensBtn.addEventListener('click', approveTokens);
 oracleForm.addEventListener('submit', submitOracleData);
 
 // Initialize
@@ -126,6 +155,7 @@ async function connectWallet() {
         walletInfo.classList.remove('hidden');
         refreshBalances.disabled = false;
         getTokensBtn.disabled = false;
+        approveTokensBtn.disabled = false;
         submitBtn.disabled = false;
 
         // Load balances
@@ -148,6 +178,7 @@ function disconnectWallet() {
     walletInfo.classList.add('hidden');
     refreshBalances.disabled = true;
     getTokensBtn.disabled = true;
+    approveTokensBtn.disabled = true;
     submitBtn.disabled = true;
 
     usdcBalance.textContent = '--';
@@ -217,6 +248,75 @@ async function mintTestTokens() {
     } finally {
         getTokensBtn.disabled = false;
         getTokensBtn.textContent = 'Get Test Tokens';
+    }
+}
+
+async function approveTokens() {
+    if (!signer) {
+        showResult('Please connect your wallet first', 'error');
+        return;
+    }
+
+    approveTokensBtn.disabled = true;
+    approveTokensBtn.textContent = 'Approving...';
+
+    try {
+        let approvalResults = [];
+
+        // Approve Mock USDC
+        try {
+            const usdcContract = new ethers.Contract(MOCK_USDC_ADDRESS, ERC20_ABI, signer);
+
+            // Get user's Mock USDC balance
+            const usdcBalance = await usdcContract.balanceOf(userAddress);
+
+            if (usdcBalance.gt(0)) {
+                const usdcTx = await usdcContract.approve(TREASURY_CONTRACT_ADDRESS, usdcBalance);
+                await usdcTx.wait();
+
+                // Format balance for display
+                const usdcBalanceFormatted = ethers.utils.formatUnits(usdcBalance, 18);
+                approvalResults.push(`Mock USDC approved: ${parseFloat(usdcBalanceFormatted).toFixed(2)}`);
+            } else {
+                approvalResults.push('Mock USDC: No balance to approve');
+            }
+        } catch (error) {
+            console.error('USDC approval error:', error);
+            approvalResults.push('Mock USDC approval failed');
+        }
+
+        // Approve Mock EURC
+        try {
+            const eurcContract = new ethers.Contract(MOCK_EURC_ADDRESS, ERC20_ABI, signer);
+
+            // Get user's Mock EURC balance
+            const eurcBalance = await eurcContract.balanceOf(userAddress);
+
+            if (eurcBalance.gt(0)) {
+                const eurcTx = await eurcContract.approve(TREASURY_CONTRACT_ADDRESS, eurcBalance);
+                await eurcTx.wait();
+
+                // Format balance for display
+                const eurcBalanceFormatted = ethers.utils.formatUnits(eurcBalance, 18);
+                approvalResults.push(`Mock EURC approved: ${parseFloat(eurcBalanceFormatted).toFixed(2)}`);
+            } else {
+                approvalResults.push('Mock EURC: No balance to approve');
+            }
+        } catch (error) {
+            console.error('EURC approval error:', error);
+            approvalResults.push('Mock EURC approval failed');
+        }
+
+        showResult(
+            `Approval complete!<br>${approvalResults.join('<br>')}`,
+            'success'
+        );
+    } catch (error) {
+        console.error('Failed to approve tokens:', error);
+        showResult(`Failed to approve tokens: ${error.message}`, 'error');
+    } finally {
+        approveTokensBtn.disabled = false;
+        approveTokensBtn.textContent = 'Approve Tokens';
     }
 }
 
