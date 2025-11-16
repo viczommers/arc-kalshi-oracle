@@ -67,6 +67,7 @@ const usdcBalance = document.getElementById('usdcBalance');
 const eurcBalance = document.getElementById('eurcBalance');
 const refreshBalances = document.getElementById('refreshBalances');
 const getTokensBtn = document.getElementById('getTokensBtn');
+const approveAndDepositBtn = document.getElementById('approveAndDepositBtn');
 const approveTokensBtn = document.getElementById('approveTokensBtn');
 const depositAllBtn = document.getElementById('depositAllBtn');
 const oracleForm = document.getElementById('oracleForm');
@@ -87,6 +88,7 @@ connectBtn.addEventListener('click', () => {
 disconnectBtn.addEventListener('click', disconnectWallet);
 refreshBalances.addEventListener('click', loadBalances);
 getTokensBtn.addEventListener('click', mintTestTokens);
+approveAndDepositBtn.addEventListener('click', approveAndDeposit);
 approveTokensBtn.addEventListener('click', approveTokens);
 depositAllBtn.addEventListener('click', depositAllTokens);
 oracleForm.addEventListener('submit', submitOracleData);
@@ -168,8 +170,9 @@ async function connectWallet() {
         walletInfo.classList.remove('hidden');
         refreshBalances.disabled = false;
         getTokensBtn.disabled = false;
+        approveAndDepositBtn.disabled = false;
         approveTokensBtn.disabled = false;
-        depositAllBtn.disabled = false;
+        depositAllBtn.disabled = true; // Keep disabled until approvals
         submitBtn.disabled = false;
 
         // Load balances
@@ -192,6 +195,7 @@ function disconnectWallet() {
     walletInfo.classList.add('hidden');
     refreshBalances.disabled = true;
     getTokensBtn.disabled = true;
+    approveAndDepositBtn.disabled = true;
     approveTokensBtn.disabled = true;
     depositAllBtn.disabled = true;
     submitBtn.disabled = true;
@@ -266,6 +270,84 @@ async function mintTestTokens() {
     }
 }
 
+async function approveAndDeposit() {
+    if (!signer) {
+        showResult('Please connect your wallet first', 'error');
+        return;
+    }
+
+    approveAndDepositBtn.disabled = true;
+    approveAndDepositBtn.textContent = 'Step 1/3: Approving USDC...';
+
+    try {
+        let usdcApproved = false;
+        let eurcApproved = false;
+
+        // Step 1: Approve Mock USDC
+        try {
+            const usdcContract = new ethers.Contract(MOCK_USDC_ADDRESS, ERC20_ABI, signer);
+            const usdcBalance = await usdcContract.balanceOf(userAddress);
+
+            if (usdcBalance.gt(0)) {
+                const usdcTx = await usdcContract.approve(TREASURY_CONTRACT_ADDRESS, usdcBalance);
+                await usdcTx.wait();
+                usdcApproved = true;
+            }
+        } catch (error) {
+            console.error('USDC approval error:', error);
+            showResult('USDC approval failed', 'error');
+            approveAndDepositBtn.disabled = false;
+            approveAndDepositBtn.textContent = 'Approve & Deposit All';
+            return;
+        }
+
+        // Step 2: Approve Mock EURC
+        approveAndDepositBtn.textContent = 'Step 2/3: Approving EURC...';
+        try {
+            const eurcContract = new ethers.Contract(MOCK_EURC_ADDRESS, ERC20_ABI, signer);
+            const eurcBalance = await eurcContract.balanceOf(userAddress);
+
+            if (eurcBalance.gt(0)) {
+                const eurcTx = await eurcContract.approve(TREASURY_CONTRACT_ADDRESS, eurcBalance);
+                await eurcTx.wait();
+                eurcApproved = true;
+            }
+        } catch (error) {
+            console.error('EURC approval error:', error);
+            showResult('EURC approval failed', 'error');
+            approveAndDepositBtn.disabled = false;
+            approveAndDepositBtn.textContent = 'Approve & Deposit All';
+            return;
+        }
+
+        // Step 3: Deposit and mint PST
+        if (usdcApproved && eurcApproved) {
+            approveAndDepositBtn.textContent = 'Step 3/3: Depositing...';
+
+            const treasuryContract = new ethers.Contract(TREASURY_CONTRACT_ADDRESS, TREASURY_ABI, signer);
+            const tx = await treasuryContract.depositDualAll();
+
+            showResult('Transaction submitted! Waiting for confirmation...', 'success');
+
+            const receipt = await tx.wait();
+
+            showResult(
+                `Success! PST tokens minted!<br>Transaction: ${receipt.transactionHash.substring(0, 10)}...<br>Block: ${receipt.blockNumber}`,
+                'success'
+            );
+
+            // Refresh balances after deposit
+            setTimeout(() => loadBalances(), 2000);
+        }
+    } catch (error) {
+        console.error('Failed to approve and deposit:', error);
+        showResult(`Failed: ${error.message}`, 'error');
+    } finally {
+        approveAndDepositBtn.disabled = false;
+        approveAndDepositBtn.textContent = 'Approve & Deposit All';
+    }
+}
+
 async function approveTokens() {
     if (!signer) {
         showResult('Please connect your wallet first', 'error');
@@ -292,6 +374,9 @@ async function approveTokens() {
                 // Format balance for display
                 const usdcBalanceFormatted = ethers.utils.formatUnits(usdcBalance, 18);
                 approvalResults.push(`Mock USDC approved: ${parseFloat(usdcBalanceFormatted).toFixed(2)}`);
+
+                // Enable deposit button after approval
+                depositAllBtn.disabled = false;
             } else {
                 approvalResults.push('Mock USDC: No balance to approve');
             }
@@ -314,6 +399,9 @@ async function approveTokens() {
                 // Format balance for display
                 const eurcBalanceFormatted = ethers.utils.formatUnits(eurcBalance, 18);
                 approvalResults.push(`Mock EURC approved: ${parseFloat(eurcBalanceFormatted).toFixed(2)}`);
+
+                // Enable deposit button after approval
+                depositAllBtn.disabled = false;
             } else {
                 approvalResults.push('Mock EURC: No balance to approve');
             }
@@ -331,7 +419,7 @@ async function approveTokens() {
         showResult(`Failed to approve tokens: ${error.message}`, 'error');
     } finally {
         approveTokensBtn.disabled = false;
-        approveTokensBtn.textContent = 'Approve Tokens';
+        approveTokensBtn.textContent = 'Approve Only';
     }
 }
 
@@ -368,7 +456,7 @@ async function depositAllTokens() {
         showResult(`Failed to deposit tokens: ${error.message}`, 'error');
     } finally {
         depositAllBtn.disabled = false;
-        depositAllBtn.textContent = 'Deposit All Tokens';
+        depositAllBtn.textContent = 'Deposit Only';
     }
 }
 
