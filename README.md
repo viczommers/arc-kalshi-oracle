@@ -1,6 +1,36 @@
-# Kalshi Oracle
+# Kalshi Oracle and Treasury Auto Balancer
 
-This document is meant to describe in high-level how this project works.
+
+*"Predictive Treasury Automation"*
+
+**The Problem:** Traditional stablecoin portfolio management relies on outdated price data and manual intervention, leaving institutions exposed to volatile foreign exchange risks and suboptimal capital allocation.
+
+**Our Solution:** We've built the first-ever prediction market oracle that transforms Kalshi's real-time odds into actionable smart contracts, automatically rebalancing USDC/EURC portfolios based on forward-looking market expectations rather than historical prices.
+
+**The Innovation:**
+
+* ⁠Real-time USD/EUR outlook signals published directly to Arc Network
+
+* ⁠Smart contracts trigger automated rebalancing based on prediction market insights
+
+* ⁠First-of-its-kind integration of prediction markets with DeFi liquidity pools
+
+**The Opportunity:**
+Institutional treasuries, DAOs, and digital custodians need automated currency allocation that aligns with verified market expectations. Our solution provides:
+
+* ⁠Automated stablecoin reserve management
+* ⁠Enhanced FX risk mitigation
+* ⁠Rules-based portfolio rebalancing powered by predictive analytics
+
+**Why Now:** The convergence of prediction markets, DeFi infrastructure, and institutional crypto adoption creates a massive opportunity to revolutionize how digital assets are managed across the enterprise ecosystem.
+
+**The Goal:** Build upon our oracle foundation to create new use cases for predictive finance in decentralized treasury management.
+
+> We are ready to build the future of automated stablecoin portfolio management.
+
+---
+
+## Technical Explanation
 
 At the core of this project there's the **TreasuryManager** smart contract. Connected to the treasury we have 3 tokens ( 1 mocked **wrapped USDC**, 1 mocked **EURC** and **Pool Share Token aka PST** ). Lastly we have the **KalshiLinkOracle** smart contract.
 
