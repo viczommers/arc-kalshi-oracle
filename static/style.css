@@ -111,9 +111,45 @@ h1 {
     text-shadow: 0 0 10px #00ffff;
 }
 
+.loading-bar {
+    width: 300px;
+    height: 2px;
+    background: #001100;
+    margin: 1rem auto;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeIn 2s ease-in-out 0s forwards;
+    max-width: 80%;
+}
+
+.loading-progress {
+    width: 0;
+    height: 100%;
+    background: #ffffff;
+    animation: loadProgress 2s ease-in-out 0s forwards;
+}
+
+@keyframes loadProgress {
+    0% { width: 0; }
+    100% { width: 100%; }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .subtitle {
     font-size: 1.2rem;
-    opacity: 0.9;
+    opacity: 0;
+    animation: fadeIn 2s ease-in-out 0s forwards;
 }
 
 .balance-section,
@@ -146,6 +182,17 @@ h2 {
     color: white;
 }
 
+#connectBtn {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.5) 0%, rgba(118, 75, 162, 0.5) 100%);
+    transition: background 0.3s ease;
+}
+
+#connectBtn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: none;
+    box-shadow: none;
+}
+
 .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
@@ -154,6 +201,15 @@ h2 {
 .btn-secondary {
     background: #6c757d;
     color: white;
+}
+
+#disconnectBtn {
+    background: rgba(108, 117, 125, 0.5);
+    transition: background 0.3s ease;
+}
+
+#disconnectBtn:hover {
+    background: #6c757d;
 }
 
 .btn-secondary:hover:not(:disabled) {
