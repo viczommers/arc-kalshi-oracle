@@ -1,11 +1,10 @@
-# Kalshi Oracle and Treasury Auto Balancer
+# Kalshi Oracle For Automated Stablecoin Treasury Management 
 
 **Live demo:**
+Check out the live demo @ [trade.delphi-pool.com](https://trade.delphi-pool.com/).
 
-Check out the live demo [here](https://trade.delphi-pool.com/).
 
-
-*"Predictive Treasury Automation"*
+*"Using Prediction Market Signals for Treasury Automation"*
 
 **The Problem:** Traditional stablecoin portfolio management relies on outdated price data and manual intervention, leaving institutions exposed to volatile foreign exchange risks and suboptimal capital allocation.
 
@@ -34,6 +33,17 @@ Institutional treasuries, DAOs, and digital custodians need automated currency a
 
 
 We are ready to build the future of automated stablecoin portfolio management.
+
+---
+
+## Python Installation
+
+Install with:
+```sh
+    source venv/bin/activate  # On Windows use `.\venv\Scripts\Activate`
+    pip install -r requirements.txt
+    python main.py
+```
 
 ---
 
@@ -70,46 +80,6 @@ For more details on how the first main contract (treasury) and second smart cont
 
 ## Kalshi Oracle
 A FastAPI server polls the Kalshi prediction market API and determines the odds of the direction of EUR/USD FX rates. It records this on Arc through the **KalshiLinkOracle** smart contract. Based on the odds, it autonomously calculates the adjustment needed to rebalance the pool.
-
-
-
-## Installation
-
-Install with:
-
-```sh
-npm i
-```
-
-Copy over the .env.example end edit it
-
-```sh
-cp .env.example .env
-```
-
-Compile:
-
-```sh
-npm run compile
-```
-
----
-
-## Backend
-
-Create the Python env variable
-
-```sh
-source venv/bin/activate
-```
-
-And then run the backend:
-
-```sh
-python main.py
-```
-
----
 
 ## Diagram
 
