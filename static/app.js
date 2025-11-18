@@ -147,6 +147,14 @@ window.addEventListener('load', () => {
         loadKalshiMarketData();
     }, 30000);
 
+    // Animate balance section accordion opening on page load
+    setTimeout(() => {
+        const balanceSection = document.querySelector('.balance-section');
+        if (balanceSection) {
+            balanceSection.classList.add('active');
+        }
+    }, 2000);
+
     // Check if already connected
     if (window.ethereum && window.ethereum.selectedAddress) {
         connectWallet();
@@ -687,7 +695,8 @@ async function loadOracleInfo() {
 
         contractAddress.textContent = `${data.contract_address.substring(0, 6)}...${data.contract_address.substring(38)} 🔗`;
         contractAddress.href = `https://testnet.arcscan.app/address/${data.contract_address}`;
-        ownerAddress.textContent = `${data.owner.substring(0, 6)}...${data.owner.substring(38)}`;
+        ownerAddress.textContent = `${data.owner.substring(0, 6)}...${data.owner.substring(38)} 🔗`;
+        ownerAddress.href = `https://testnet.arcscan.app/address/${data.owner}`;
         totalDataPoints.textContent = data.total_data_points;
 
         // Display latest observation if available

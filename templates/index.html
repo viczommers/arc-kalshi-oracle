@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delphi Pool | Kalshi x Circle</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -16,8 +20,8 @@
         <div class="wallet-header-container">
             <button id="connectBtn" class="btn btn-primary">Connect MetaMask 🦊</button>
             <div id="walletInfo" class="wallet-info hidden">
-                <span><strong>Connected:</strong> <span id="walletAddress"></span></span>
-                <span><strong>Network:</strong> <span id="networkName"></span></span>
+                <span><strong>Connected:</strong><br><span id="walletAddress"></span></span>
+                <span><strong>Network:</strong><br><span id="networkName"></span></span>
                 <button id="addPstTokenBtn" class="btn btn-secondary">Add Pool Token</button>
                 <button id="refreshBalances" class="btn btn-secondary" disabled>Refresh Balances</button>
                 <button id="disconnectBtn" class="btn btn-secondary">Disconnect</button>
@@ -40,7 +44,7 @@
             <p class="subtitle">Kalshi Odds as Prediction Markets Oracle for USDC/EURC Treasury Management</p>
         </header>
 
-        <div class="balance-section accordion-item active">
+        <div class="balance-section accordion-item">
             <div class="accordion-header">
                 <h2>Token Balances</h2>
                 <span class="accordion-icon"></span>
@@ -57,9 +61,9 @@
                     <p class="balance-amount" id="eurcBalance">--</p>
                 </div>
             </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <div style="flex: 1; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 14px;">Treasury Proportions</h3>
+            <div class="info-boxes-container">
+                <div class="info-box">
+                    <h3>Treasury Proportions</h3>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div>
                             <strong>USDC:</strong> <span id="usdToEurProp">--</span>%
@@ -68,12 +72,12 @@
                             <strong>EURC:</strong> <span id="eurToUsdProp">--</span>%
                         </div>
                         <div>
-                            <strong>Contract:</strong> <a id="treasuryContract" href="#" target="_blank" style="font-family: monospace; font-size: 12px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">-- 🔗</a>
+                            <strong>Contract:</strong> <a id="treasuryContract" href="#" target="_blank">-- 🔗</a>
                         </div>
                     </div>
                 </div>
-                <div style="flex: 1; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 14px;">Kalshi Market Data</h3>
+                <div class="info-box">
+                    <h3>Kalshi Market Data</h3>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div>
                             <strong>EUR/USD Rate:</strong> <span id="eurUsdRate">Loading...</span>
@@ -82,13 +86,13 @@
                             <strong>Probability:</strong> <span id="kalshiProbability">Loading...</span>
                         </div>
                         <div>
-                            <strong>Ticker:</strong> <a id="kalshiTicker" href="#" target="_blank" style="font-family: monospace; font-size: 12px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Loading... 🔗</a>
+                            <strong>Ticker:</strong> <a id="kalshiTicker" href="#" target="_blank">Loading... 🔗</a>
                         </div>
                     </div>
                 </div>
             </div>
-            <div style="margin-top: 15px; padding: 10px; background: #f0f7ff; border-radius: 5px;">
-                <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #667eea; text-align: center;">INTERACT WITH POOL 🔄</h3>
+            <div class="interact-section">
+                <h3>INTERACT WITH POOL 🌐</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
                     <button id="getTokensBtn" class="btn btn-primary" disabled style="display: none;">Get Test Tokens</button>
                     <button id="approveAndDepositBtn" class="btn btn-primary" disabled>Approve & Deposit</button>
@@ -137,15 +141,18 @@
 
 
         <div class="oracle-info">
-            <h2>Oracle Information</h2>
-            <div id="oracleDetails" class="info-grid">
+            <div class="oracle-info-header">
+                <h2>Oracle Information</h2>
+            </div>
+            <div class="oracle-info-content">
+                <div id="oracleDetails" class="info-grid">
                 <div class="info-item">
                     <span class="label">Contract:</span>
-                    <a id="contractAddress" href="#" target="_blank" style="font-family: monospace; font-size: 14px; color: #667eea; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Loading... 🔗</a>
+                    <a id="contractAddress" href="#" target="_blank">Loading... 🔗</a>
                 </div>
                 <div class="info-item">
                     <span class="label">Owner:</span>
-                    <span id="ownerAddress">Loading...</span>
+                    <a id="ownerAddress" href="#" target="_blank">Loading...</a>
                 </div>
                 <div class="info-item">
                     <span class="label">Total Data Points:</span>
@@ -155,6 +162,7 @@
                     <span class="label">Latest Observation (EUR/USD):</span>
                     <span id="latestObservation">Loading...</span>
                 </div>
+            </div>
             </div>
         </div>
     </div>

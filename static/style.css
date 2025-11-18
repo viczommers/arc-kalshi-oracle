@@ -2,10 +2,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Roboto Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Roboto Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: #000000;
     min-height: 100vh;
     padding: 0;
@@ -22,7 +23,7 @@ body {
     overflow: hidden;
     pointer-events: none;
     z-index: 1;
-    font-family: 'Courier New', monospace;
+    font-family: 'Roboto Mono', 'Courier New', monospace;
     line-height: 1;
 }
 
@@ -43,7 +44,7 @@ body {
     padding: 0;
     box-sizing: border-box;
     overflow: hidden;
-    font-family: 'Courier New', monospace;
+    font-family: 'Roboto Mono', 'Courier New', monospace;
     word-break: break-all;
     text-align: left;
     display: block;
@@ -74,7 +75,7 @@ body {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .container {
@@ -87,7 +88,7 @@ body {
 
 header {
     text-align: center;
-    color: white;
+    color: #00ffff;
     margin-bottom: 40px;
 }
 
@@ -107,7 +108,7 @@ h1 {
 }
 
 .revealed {
-    color: #ffffff;
+    color: #00ffff;
     text-shadow: 0 0 10px #00ffff;
 }
 
@@ -154,8 +155,6 @@ h1 {
 
 .balance-section {
     margin-bottom: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
 }
 
 .accordion-item {
@@ -163,8 +162,9 @@ h1 {
 }
 
 .accordion-header {
-    background: white;
-    padding: 1.5rem 2rem;
+    border: 2px solid #00ff00;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1rem 1.5rem;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -173,52 +173,84 @@ h1 {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    border-radius: 12px 12px 0 0;
 }
 
 .accordion-header:hover {
-    background: #f8f9fa;
+    background: #00ff00;
+    box-shadow: 0 0 20px #00ff00;
+}
+
+.accordion-header:hover h2 {
+    color: #000000;
+}
+
+.accordion-header:hover .accordion-icon {
+    color: #000000;
 }
 
 .accordion-header h2 {
-    font-size: 1.5rem;
-    color: #333;
+    font-size: 1.2rem;
+    color: #00ff00;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     transition: color 0.3s ease;
-    font-weight: 600;
+    font-weight: normal;
     margin: 0;
 }
 
+.accordion-item.active .accordion-header {
+    border-color: #00ffff;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.accordion-item.active .accordion-header h2 {
+    color: #00ffff;
+}
+
 .accordion-icon {
-    font-size: 1.5rem;
-    transition: transform 0.3s ease;
-    color: #000000;
+    font-size: 2rem;
+    transition: color 0.3s ease;
+    color: #00ff00;
     font-weight: bold;
 }
 
 .accordion-icon::before {
-    content: '▼';
+    content: '+';
     display: inline-block;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.15s ease;
+}
+
+.accordion-item.active .accordion-icon {
+    color: #00ffff;
 }
 
 .accordion-item.active .accordion-icon::before {
     transform: rotate(180deg);
+    content: '−';
 }
 
 .accordion-content {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    background: white;
-    border-radius: 0 0 12px 12px;
+    border-left: 2px solid transparent;
+    border-right: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .accordion-item.active .accordion-content {
     max-height: 1000px;
+    border-left-color: #00ffff;
+    border-right-color: #00ffff;
+    border-bottom-color: #00ffff;
 }
 
 .accordion-body {
-    padding: 0 2rem 2rem 2rem;
+    padding: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #00ffff;
     opacity: 0;
     transform: translateY(-20px);
     transition: opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s;
@@ -229,71 +261,116 @@ h1 {
     transform: translateY(0);
 }
 
-.oracle-section,
+.oracle-section {
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #00ffff;
+    border-radius: 0;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.oracle-section h2 {
+    margin-bottom: 1.5rem;
+    color: #00ffff;
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
 .oracle-info {
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.5rem;
+}
+
+.oracle-info-header {
+    border: 2px solid #00ffff;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 1rem 1.5rem;
+    margin-bottom: 0;
+}
+
+.oracle-info-header h2 {
+    margin: 0;
+    color: #00ffff;
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.oracle-info-content {
+    border-left: 2px solid #00ffff;
+    border-right: 2px solid #00ffff;
+    border-bottom: 2px solid #00ffff;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1.5rem;
 }
 
 h2 {
     margin-bottom: 20px;
-    color: #333;
+    color: #00ff00;
 }
 
 .btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 24px;
-    font-size: 16px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-family: 'Roboto Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: rgba(0, 255, 0, 0.2);
+    border: 2px solid #00ff00;
+    color: #00ff00;
 }
 
 #connectBtn {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.5) 0%, rgba(118, 75, 162, 0.5) 100%);
-    transition: background 0.3s ease;
+    background: rgba(0, 255, 0, 0.2);
+    border: 2px solid #00ff00;
+    transition: all 0.3s ease;
 }
 
 #connectBtn:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #00ff00;
+    color: #000000;
     transform: none;
-    box-shadow: none;
+    box-shadow: 0 0 20px #00ff00;
 }
 
 .btn-primary:hover:not(:disabled) {
+    background: #00ff00;
+    color: #000000;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 0 20px #00ff00;
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: white;
+    background: rgba(0, 255, 255, 0.2);
+    border: 2px solid #00ffff;
+    color: #00ffff;
 }
 
 #disconnectBtn,
 #refreshBalances,
 #addPstTokenBtn {
-    background: rgba(108, 117, 125, 0.5);
-    transition: background 0.3s ease;
+    background: rgba(0, 255, 255, 0.2);
+    border: 2px solid #00ffff;
+    transition: all 0.3s ease;
 }
 
 #disconnectBtn:hover,
 #refreshBalances:hover:not(:disabled),
 #addPstTokenBtn:hover:not(:disabled) {
-    background: #6c757d;
+    background: #00ffff;
+    color: #000000;
+    box-shadow: 0 0 20px #00ffff;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #5a6268;
+    background: #00ffff;
+    color: #000000;
+    box-shadow: 0 0 20px #00ffff;
 }
 
 .btn:disabled {
@@ -305,7 +382,7 @@ h2 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: white;
+    color: #00ffff;
 }
 
 .wallet-info span {
@@ -319,8 +396,8 @@ h2 {
 
 #walletAddress,
 #networkName {
-    font-family: monospace;
-    font-size: 14px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
     color: #00ffff;
 }
 
@@ -336,21 +413,85 @@ h2 {
 }
 
 .balance-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
+    background: rgba(0, 255, 0, 0.1);
+    color: #00ffff;
+    padding: 15px;
     border-radius: 8px;
     text-align: center;
+    font-family: 'Roboto Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    transition: all 0.3s ease;
+}
+
+.balance-card:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
 }
 
 .balance-card h3 {
-    margin-bottom: 10px;
-    font-size: 1.2rem;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    color: #00ff00;
 }
 
 .balance-amount {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
+    color: #00ffff;
+}
+
+.info-boxes-container {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.info-box {
+    flex: 1;
+    padding: 10px;
+    background: rgba(0, 255, 0, 0.05);
+    border-radius: 5px;
+}
+
+.info-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    color: #00ffff;
+}
+
+.info-box strong {
+    color: #00ff00;
+}
+
+.info-box span {
+    color: #00ffff;
+}
+
+.info-box a {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    color: #00ffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.info-box a:hover {
+    text-decoration: underline;
+    text-shadow: 0 0 10px #00ffff;
+}
+
+.interact-section {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 5px;
+}
+
+.interact-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #00ffff;
+    text-align: center;
+    letter-spacing: 0.1em;
 }
 
 .form-group {
@@ -361,27 +502,35 @@ h2 {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #333;
+    color: #00ff00;
 }
 
 .form-group input {
     width: 100%;
     padding: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #00ff00;
     border-radius: 8px;
     font-size: 16px;
-    transition: border-color 0.3s ease;
+    background: rgba(0, 0, 0, 0.3);
+    color: #00ffff;
+    font-family: 'Roboto Mono', monospace;
+    transition: all 0.3s ease;
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.form-group input::placeholder {
+    color: rgba(0, 255, 255, 0.5);
 }
 
 .form-group small {
     display: block;
     margin-top: 5px;
-    color: #6c757d;
+    color: rgba(0, 255, 0, 0.7);
     font-size: 14px;
 }
 
@@ -389,41 +538,56 @@ h2 {
     margin-top: 20px;
     padding: 15px;
     border-radius: 8px;
+    font-weight: 600;
 }
 
 .result.success {
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    color: #155724;
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #00ff00;
+    color: #00ff00;
 }
 
 .result.error {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
+    background: rgba(255, 0, 0, 0.1);
+    border: 2px solid #ff0000;
+    color: #ff6666;
 }
 
 .info-grid {
     display: grid;
-    gap: 15px;
+    gap: 10px;
 }
 
 .info-item {
     display: flex;
     justify-content: space-between;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    padding: 10px;
+    background: rgba(0, 255, 0, 0.05);
+    border-radius: 5px;
 }
 
 .info-item .label {
     font-weight: 600;
-    color: #667eea;
+    color: #00ff00;
 }
 
 .info-item span:last-child {
-    font-family: monospace;
+    font-family: 'Roboto Mono', monospace;
     font-size: 14px;
+    color: #00ffff;
+}
+
+.info-item a {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    color: #00ffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.info-item a:hover {
+    text-decoration: underline;
+    text-shadow: 0 0 10px #00ffff;
 }
 
 @media (max-width: 768px) {
@@ -475,5 +639,9 @@ h2 {
 
     .balances-grid {
         grid-template-columns: 1fr;
+    }
+
+    .info-boxes-container {
+        flex-direction: column;
     }
 }

@@ -75,8 +75,19 @@ def get_latest_maket():
 
         most_likely_ticker, most_likely_prob, most_likely_market = ranked[0]
 
-        # Extract price component from ticker (everything after the trailing 'B')
-        price = most_likely_ticker.split("B")[-1]
+        # Extract price component from ticker
+        # Ticker format: KXEURUSD-25NOV1810-T1.17399 or KXEURUSD-25NOV1810-B1.17399
+        # Split by '-' and get the last part, then remove the 'T' or 'B' prefix
+        parts = most_likely_ticker.split('-')
+        if parts:
+            last_part = parts[-1]
+            # Remove first character if it's 'T' or 'B'
+            if last_part and last_part[0] in ['T', 'B']:
+                price = last_part[1:]
+            else:
+                price = last_part
+        else:
+            price = most_likely_ticker
 
         return {
             'price': price,
